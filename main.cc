@@ -1,4 +1,5 @@
 #include <benchmark/benchmark.h>
+#include <cerrno>
 #include <cstdio>
 #include <unistd.h>
 
@@ -22,6 +23,11 @@ BENCHMARK(syscall_sys_ni_syscall);
  * available to any process.
  */
 static void fastcall_noop(benchmark::State &state) {
+  syscall(NR_FASTCALL_SYSCALL);
+  if (errno == ENOSYS) {
+    state.SkipWithError("Fastcall system call not available!");
+    return;
+  }
   for (auto _ : state)
     syscall(NR_FASTCALL_SYSCALL);
 }

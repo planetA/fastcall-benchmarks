@@ -4,12 +4,11 @@ Benchmarks for the comparison of the [fastcall mechanism](https://github.com/vil
 
 ## Dependencies
 
-* C++ compiler
-* *CMake*
-* [*benchmark*](https://github.com/google/benchmark)
-* Linux operating system
-
-[//]: # "TODO add dependencies for different benchmark environments"
+- C++ compiler
+- _CMake_
+- [_benchmark_](https://github.com/google/benchmark)
+- Linux operating system
+- [fastcall-enabled kernel](https://github.com/vilaureu/linux/tree/fastcall) with the fastcall-examples module loaded
 
 ## Build
 
@@ -20,9 +19,13 @@ $ cmake --build build/
 
 ## Usage
 
-`$ ./build/fastcall-examples`
+To benchmark system calls:
 
-[//]: # "TODO differentiate between benchmarks requiring mutual exclusive environments"
+`$ ./build/fastcall-examples --benchmark_filter=syscall`
+
+To benchmark the fastcall mechanism _(requires the fastcall-enabled kernel)_:
+
+`$ ./build/fastcall-examples --benchmark_filter=fastcall`
 
 ## Licence
 
