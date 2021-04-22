@@ -4,10 +4,14 @@ Benchmarks for the comparison of the [fastcall mechanism](https://github.com/vil
 
 ## Dependencies
 
-- C++ compiler
+### Building
+
+- _GCC_ or _Clang_
 - _CMake_
 - [_benchmark_](https://github.com/google/benchmark)
-- Linux operating system
+
+### Benchmark Kernels
+
 - [fastcall-enabled kernel](https://github.com/vilaureu/linux/tree/fastcall) with the fastcall-examples module loaded
 
 ## Build
