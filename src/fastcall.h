@@ -16,7 +16,7 @@ struct ioctl_args {
 struct array_args {
   unsigned long fn_addr;
   unsigned long fn_len;
-  unsigned long shared_addr;
+  void *shared_addr;
   unsigned index;
 };
 

@@ -8,6 +8,7 @@
 #include <benchmark/benchmark.h>
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <unistd.h>
 
 /* Unused system call number on x86-64 */
@@ -34,6 +35,7 @@ static void fastcall_noop(benchmark::State &state) {
     state.SkipWithError("Fastcall system call not available!");
     return;
   }
+
   for (auto _ : state)
     syscall(NR_FASTCALL_SYSCALL, -1);
 }
@@ -49,6 +51,7 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, FCE_IOCTL_NOOP,
     state.SkipWithError("system call failed!");
     return;
   }
+
   for (auto _ : state)
     fastcall();
 }
@@ -63,12 +66,13 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, FCE_IOCTL_STACK,
     state.SkipWithError("system call failed!");
     return;
   }
+
   for (auto _ : state)
-    fastcall();
+    fastcall(MAGIC);
 }
 
 /*
- * Benchmark the stack fastcall function of fastcall-examples.
+ * Benchmark the priv fastcall function of fastcall-examples.
  */
 BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, FCE_IOCTL_PRIV,
                      struct ioctl_args)
@@ -77,8 +81,29 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, FCE_IOCTL_PRIV,
     state.SkipWithError("system call failed!");
     return;
   }
+
   for (auto _ : state)
-    fastcall();
+    fastcall(MAGIC);
 }
+/*
+ * Benchmark the array fastcall function of fastcall-examples.
+ */
+BENCHMARK_TEMPLATE_DEFINE_F(ExamplesFixture, fastcall_examples_array,
+                            FCE_IOCTL_ARRAY, struct array_args)
+(benchmark::State &state) {
+  if (fastcall(0, state.range()) != 0) {
+    state.SkipWithError("system call failed!");
+    return;
+  }
+
+  memset(args.shared_addr, MAGIC, state.range());
+
+  for (auto _ : state)
+    fastcall(MAGIC % 64, state.range());
+
+  state.SetBytesProcessed(state.iterations() * state.range());
+}
+BENCHMARK_REGISTER_F(ExamplesFixture, fastcall_examples_array)
+    ->DenseRange(0, 64, 16);
 
 BENCHMARK_MAIN();
