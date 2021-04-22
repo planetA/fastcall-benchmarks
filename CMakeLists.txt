@@ -5,6 +5,6 @@ add_compile_options(-Wall -Wextra)
 
 find_package(benchmark REQUIRED)
 
-add_executable (fastcall-benchmarks main.cc)
+add_executable (fastcall-benchmarks src/main.cc)
 
 target_link_libraries(fastcall-benchmarks benchmark::benchmark)
