@@ -2,6 +2,7 @@
 #include <benchmark/benchmark.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 template <const unsigned long type, class Arguments>
@@ -21,9 +22,11 @@ public:
     }
   }
 
-  void TearDown(::benchmark::State &) override {
-    close(fd);
-    // TODO unregistering
+  void TearDown(::benchmark::State &state) override {
+    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0)
+      state.SkipWithError("munmap failed!");
+    if (close(fd) < 0)
+      state.SkipWithError("close failed!");
   }
 
 protected:

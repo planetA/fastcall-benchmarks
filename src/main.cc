@@ -12,6 +12,7 @@
 
 /* Unused system call number on x86-64 */
 static const unsigned long NR_SYS_NI_SYSCALL = 335;
+static const unsigned long MAGIC = 0xBEEF;
 
 /*
  * Benchmark the execution of an empty system call by using sys_ni_syscall,
@@ -45,7 +46,7 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, FCE_IOCTL_NOOP,
                      struct ioctl_args)
 (benchmark::State &state) {
   if (fastcall() != 0) {
-    state.SkipWithError("fastcall-examples noop failed!");
+    state.SkipWithError("system call failed!");
     return;
   }
   for (auto _ : state)
@@ -58,8 +59,22 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, FCE_IOCTL_NOOP,
 BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, FCE_IOCTL_STACK,
                      struct ioctl_args)
 (benchmark::State &state) {
-  if (fastcall() != 0) {
-    state.SkipWithError("fastcall-examples stack failed!");
+  if (fastcall(MAGIC) != MAGIC) {
+    state.SkipWithError("system call failed!");
+    return;
+  }
+  for (auto _ : state)
+    fastcall();
+}
+
+/*
+ * Benchmark the stack fastcall function of fastcall-examples.
+ */
+BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, FCE_IOCTL_PRIV,
+                     struct ioctl_args)
+(benchmark::State &state) {
+  if (fastcall(MAGIC) != MAGIC + 1) {
+    state.SkipWithError("system call failed!");
     return;
   }
   for (auto _ : state)
