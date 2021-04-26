@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <unistd.h>
 
 /* Unused system call number on x86-64 */
@@ -30,8 +31,8 @@ BENCHMARK(syscall_sys_ni_syscall);
  * available to any process.
  */
 static void fastcall_noop(benchmark::State &state) {
-  syscall(NR_FASTCALL_SYSCALL, 0);
-  if (errno == ENOSYS) {
+  syscall(NR_FASTCALL_SYSCALL, -1);
+  if (errno != EINVAL) {
     state.SkipWithError("Fastcall system call not available!");
     return;
   }
@@ -97,11 +98,29 @@ BENCHMARK_TEMPLATE_DEFINE_F(ExamplesFixture, fastcall_examples_array,
   memset(args.shared_addr, MAGIC, state.range());
 
   for (auto _ : state)
-    fastcall(MAGIC % 64, state.range());
+    fastcall(MAGIC % FCE_DATA_SIZE, state.range());
 
   state.SetBytesProcessed(state.iterations() * state.range());
 }
 BENCHMARK_REGISTER_F(ExamplesFixture, fastcall_examples_array)
-    ->DenseRange(0, 64, 16);
+    ->DenseRange(0, FCE_DATA_SIZE, 16);
+
+/*
+ * Benchmark the array_nt fastcall function of fastcall-examples.
+ */
+BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_nt, FCE_IOCTL_NT)
+(benchmark::State &state) {
+  if (fastcall(0, FCE_DATA_SIZE) != 0) {
+    state.SkipWithError("system call failed!");
+    return;
+  }
+
+  memset(args.shared_addr, MAGIC, FCE_DATA_SIZE);
+
+  for (auto _ : state)
+    fastcall(MAGIC % FCE_ARRAY_SIZE);
+
+  state.SetBytesProcessed(state.iterations() * FCE_DATA_SIZE);
+}
 
 BENCHMARK_MAIN();

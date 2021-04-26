@@ -56,3 +56,6 @@ class ExamplesFixture<FCE_IOCTL_PRIV>
 template <>
 class ExamplesFixture<FCE_IOCTL_ARRAY>
     : public ExamplesFixtureShared<FCE_IOCTL_ARRAY, struct array_args> {};
+template <>
+class ExamplesFixture<FCE_IOCTL_NT>
+    : public ExamplesFixtureShared<FCE_IOCTL_NT, struct array_args> {};

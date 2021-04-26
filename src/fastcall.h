@@ -28,5 +28,10 @@ static constexpr unsigned long fce_ioctl(unsigned char cmd) {
 static const unsigned long FCE_IOCTL_NOOP = fce_ioctl(0);
 static const unsigned long FCE_IOCTL_STACK = fce_ioctl(1);
 static const unsigned long FCE_IOCTL_PRIV = fce_ioctl(2);
-static const unsigned long FCE_IOCTL_ARRAY =
-    _IOR(FCE_TYPE, 3, struct array_args);
+static constexpr unsigned long fce_ioctl_array(unsigned char cmd) {
+  return _IOR(FCE_TYPE, cmd, struct array_args);
+}
+static const unsigned long FCE_IOCTL_ARRAY = fce_ioctl_array(3);
+static const unsigned long FCE_IOCTL_NT = fce_ioctl_array(4);
+static const unsigned FCE_DATA_SIZE = 64;
+static const unsigned FCE_ARRAY_SIZE = 64;
