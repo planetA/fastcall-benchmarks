@@ -44,8 +44,7 @@ BENCHMARK(fastcall_noop);
 /*
  * Benchmark the noop fastcall function of fastcall-examples.
  */
-BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, FCE_IOCTL_NOOP,
-                     struct ioctl_args)
+BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, FCE_IOCTL_NOOP)
 (benchmark::State &state) {
   if (fastcall() != 0) {
     state.SkipWithError("system call failed!");
@@ -59,8 +58,7 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, FCE_IOCTL_NOOP,
 /*
  * Benchmark the stack fastcall function of fastcall-examples.
  */
-BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, FCE_IOCTL_STACK,
-                     struct ioctl_args)
+BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, FCE_IOCTL_STACK)
 (benchmark::State &state) {
   if (fastcall(MAGIC) != MAGIC) {
     state.SkipWithError("system call failed!");
@@ -74,8 +72,7 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, FCE_IOCTL_STACK,
 /*
  * Benchmark the priv fastcall function of fastcall-examples.
  */
-BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, FCE_IOCTL_PRIV,
-                     struct ioctl_args)
+BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, FCE_IOCTL_PRIV)
 (benchmark::State &state) {
   if (fastcall(MAGIC) != MAGIC + 1) {
     state.SkipWithError("system call failed!");
@@ -85,11 +82,12 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, FCE_IOCTL_PRIV,
   for (auto _ : state)
     fastcall(MAGIC);
 }
+
 /*
  * Benchmark the array fastcall function of fastcall-examples.
  */
 BENCHMARK_TEMPLATE_DEFINE_F(ExamplesFixture, fastcall_examples_array,
-                            FCE_IOCTL_ARRAY, struct array_args)
+                            FCE_IOCTL_ARRAY)
 (benchmark::State &state) {
   if (fastcall(0, state.range()) != 0) {
     state.SkipWithError("system call failed!");
