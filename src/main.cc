@@ -4,6 +4,8 @@
  */
 
 #include "fastcall.h"
+#include "fccmp.h"
+#include "fccmp_fixture.h"
 #include "fce_fixture.h"
 #include <benchmark/benchmark.h>
 #include <cerrno>
@@ -12,6 +14,7 @@
 #include <iostream>
 #include <unistd.h>
 
+using fccmp::IOCTLFixture;
 using fce::ExamplesFixture;
 
 /* Unused system call number on x86-64 */
@@ -33,6 +36,21 @@ static void syscall_sys_ni_syscall(benchmark::State &state) {
     syscall(NR_SYS_NI_SYSCALL);
 }
 BENCHMARK(syscall_sys_ni_syscall);
+
+/*
+ * Benchmark an empty ioctl handler provided by fccmp.
+ */
+BENCHMARK_F(IOCTLFixture, ioctl_noop)
+(benchmark::State &state) {
+  int result = fccmp_ioctl(fccmp::IOCTL_NOOP, 0);
+  if (result != 0) {
+    state.SkipWithError("ioctl failed!");
+    return;
+  }
+
+  for (auto _ : state)
+    fccmp_ioctl(fccmp::IOCTL_NOOP, 0);
+}
 
 /*
  * Benchmark the default no-operation fastcall function
