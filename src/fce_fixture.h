@@ -1,3 +1,7 @@
+/*
+ * ExamplesFixture for the fastcall-examples driver.
+ */
+
 #include "fastcall.h"
 #include <benchmark/benchmark.h>
 #include <fcntl.h>
@@ -5,11 +9,13 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+namespace fce {
+
 template <const unsigned long type, class Arguments>
 class ExamplesFixtureShared : public benchmark::Fixture {
 public:
   void SetUp(::benchmark::State &state) override {
-    fd = open(FCE_DEVICE_FILE, O_RDONLY);
+    fd = open(DEVICE_FILE, O_RDONLY);
     if (fd < 0) {
       state.SkipWithError("Failed to open device driver!");
       return;
@@ -33,7 +39,7 @@ protected:
   Arguments args;
 
   template <class... Args> int fastcall(Args... arguments) {
-    return syscall(NR_FASTCALL_SYSCALL, args.index, arguments...);
+    return syscall(NR_SYSCALL, args.index, arguments...);
   }
 
 private:
@@ -45,17 +51,19 @@ template <const unsigned long type> class ExamplesFixture {
 };
 
 template <>
-class ExamplesFixture<FCE_IOCTL_NOOP>
-    : public ExamplesFixtureShared<FCE_IOCTL_NOOP, struct ioctl_args> {};
+class ExamplesFixture<IOCTL_NOOP>
+    : public ExamplesFixtureShared<IOCTL_NOOP, struct ioctl_args> {};
 template <>
-class ExamplesFixture<FCE_IOCTL_STACK>
-    : public ExamplesFixtureShared<FCE_IOCTL_STACK, struct ioctl_args> {};
+class ExamplesFixture<IOCTL_STACK>
+    : public ExamplesFixtureShared<IOCTL_STACK, struct ioctl_args> {};
 template <>
-class ExamplesFixture<FCE_IOCTL_PRIV>
-    : public ExamplesFixtureShared<FCE_IOCTL_PRIV, struct ioctl_args> {};
+class ExamplesFixture<IOCTL_PRIV>
+    : public ExamplesFixtureShared<IOCTL_PRIV, struct ioctl_args> {};
 template <>
-class ExamplesFixture<FCE_IOCTL_ARRAY>
-    : public ExamplesFixtureShared<FCE_IOCTL_ARRAY, struct array_args> {};
+class ExamplesFixture<IOCTL_ARRAY>
+    : public ExamplesFixtureShared<IOCTL_ARRAY, struct array_args> {};
 template <>
-class ExamplesFixture<FCE_IOCTL_NT>
-    : public ExamplesFixtureShared<FCE_IOCTL_NT, struct array_args> {};
+class ExamplesFixture<IOCTL_NT>
+    : public ExamplesFixtureShared<IOCTL_NT, struct array_args> {};
+
+} // namespace fce
