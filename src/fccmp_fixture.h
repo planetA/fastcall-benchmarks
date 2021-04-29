@@ -25,7 +25,7 @@ public:
   }
 
 protected:
-  int fccmp_ioctl(unsigned cmd, unsigned long args) const {
+  int fccmp_ioctl(unsigned cmd, const void *args) const {
     return ioctl(fd, cmd, args);
   }
 

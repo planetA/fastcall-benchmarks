@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <unistd.h>
 
 using fccmp::IOCTLFixture;
@@ -42,7 +43,7 @@ BENCHMARK(syscall_sys_ni_syscall);
  */
 BENCHMARK_F(IOCTLFixture, ioctl_noop)
 (benchmark::State &state) {
-  int result = fccmp_ioctl(fccmp::IOCTL_NOOP, 0);
+  int result = fccmp_ioctl(fccmp::IOCTL_NOOP, nullptr);
   if (result != 0) {
     state.SkipWithError("ioctl failed!");
     return;
@@ -51,6 +52,30 @@ BENCHMARK_F(IOCTLFixture, ioctl_noop)
   for (auto _ : state)
     fccmp_ioctl(fccmp::IOCTL_NOOP, 0);
 }
+
+/*
+ * Benchmark the array-copying ioctl handler provided by fccmp.
+ */
+BENCHMARK_DEFINE_F(IOCTLFixture, ioctl_array)
+(benchmark::State &state) {
+  char data[fccmp::DATA_SIZE] = {MAGIC % std::numeric_limits<char>::max()};
+  unsigned char index = static_cast<unsigned char>(MAGIC % fccmp::ARRAY_LENGTH);
+  unsigned char size = static_cast<unsigned char>(state.range());
+  struct fccmp::array_args args {
+    data, index, size
+  };
+
+  int result = fccmp_ioctl(fccmp::IOCTL_ARRAY, &args);
+  if (result != 0) {
+    state.SkipWithError("ioctl failed!");
+    return;
+  }
+
+  for (auto _ : state)
+    fccmp_ioctl(fccmp::IOCTL_ARRAY, &args);
+}
+BENCHMARK_REGISTER_F(IOCTLFixture, ioctl_array)
+    ->DenseRange(0, fccmp::DATA_SIZE, 16);
 
 /*
  * Benchmark the default no-operation fastcall function
