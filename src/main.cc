@@ -23,6 +23,12 @@ static const unsigned long MAGIC = 0xBEEF;
  * the handler for empty system calls.
  */
 static void syscall_sys_ni_syscall(benchmark::State &state) {
+  int err = syscall(NR_SYS_NI_SYSCALL);
+  if (err >= 0 || errno != ENOSYS) {
+    state.SkipWithError("Unexpected system call defined!");
+    return;
+  }
+
   for (auto _ : state)
     syscall(NR_SYS_NI_SYSCALL);
 }
