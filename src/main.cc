@@ -45,6 +45,39 @@ static void syscall_sys_ni_syscall(benchmark::State &state) {
 BENCHMARK(syscall_sys_ni_syscall);
 
 /*
+ * Benchmark the array-copying system call provided by fccmp.
+ */
+static void syscall_array(benchmark::State &state) {
+  unsigned char size = static_cast<unsigned char>(state.range());
+
+  int err = syscall(fccmp::NR_ARRAY, CHAR_SEQUENCE, MAGIC_INDEX, size);
+  if (err < 0) {
+    state.SkipWithError("system call failed!");
+    return;
+  }
+
+  for (auto _ : state)
+    syscall(fccmp::NR_ARRAY, CHAR_SEQUENCE, MAGIC_INDEX, size);
+}
+BENCHMARK(syscall_array)->DenseRange(0, fccmp::DATA_SIZE, 16);
+
+/*
+ * Benchmark the array-copying system call with a non-temporal hint provided by
+ * fccmp.
+ */
+static void syscall_nt(benchmark::State &state) {
+  int err = syscall(fccmp::NR_NT, CHAR_SEQUENCE, MAGIC_INDEX);
+  if (err < 0) {
+    state.SkipWithError("system call failed!");
+    return;
+  }
+
+  for (auto _ : state)
+    syscall(fccmp::NR_NT, CHAR_SEQUENCE, MAGIC_INDEX);
+}
+BENCHMARK(syscall_nt);
+
+/*
  * Benchmark an empty ioctl handler provided by fccmp.
  */
 BENCHMARK_F(IOCTLFixture, ioctl_noop)
