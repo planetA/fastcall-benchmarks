@@ -18,9 +18,15 @@
 using fccmp::IOCTLFixture;
 using fce::ExamplesFixture;
 
+#define ALIGN(bytes) __attribute__((aligned(bytes)))
+
 /* Unused system call number on x86-64 */
 static const unsigned long NR_SYS_NI_SYSCALL = 335;
 static const unsigned long MAGIC = 0xBEEF;
+static const char MAGIC_CHAR = 0xAB;
+static const unsigned char MAGIC_INDEX =
+    static_cast<unsigned char>(MAGIC % fccmp::ARRAY_LENGTH);
+static const char ALIGN(64) CHAR_SEQUENCE[fccmp::DATA_SIZE] = {MAGIC_CHAR};
 
 /*
  * Benchmark the execution of an empty system call by using sys_ni_syscall,
@@ -58,11 +64,9 @@ BENCHMARK_F(IOCTLFixture, ioctl_noop)
  */
 BENCHMARK_DEFINE_F(IOCTLFixture, ioctl_array)
 (benchmark::State &state) {
-  char data[fccmp::DATA_SIZE] = {MAGIC % std::numeric_limits<char>::max()};
-  unsigned char index = static_cast<unsigned char>(MAGIC % fccmp::ARRAY_LENGTH);
   unsigned char size = static_cast<unsigned char>(state.range());
   struct fccmp::array_args args {
-    data, index, size
+    CHAR_SEQUENCE, MAGIC_INDEX, size
   };
 
   int result = fccmp_ioctl(fccmp::IOCTL_ARRAY, &args);
@@ -76,6 +80,26 @@ BENCHMARK_DEFINE_F(IOCTLFixture, ioctl_array)
 }
 BENCHMARK_REGISTER_F(IOCTLFixture, ioctl_array)
     ->DenseRange(0, fccmp::DATA_SIZE, 16);
+
+/*
+ * Benchmark the array-copying ioctl handler with a non-temporal hint provided
+ * by fccmp.
+ */
+BENCHMARK_F(IOCTLFixture, ioctl_nt)
+(benchmark::State &state) {
+  struct fccmp::array_nt_args args {
+    CHAR_SEQUENCE, MAGIC_INDEX
+  };
+
+  int result = fccmp_ioctl(fccmp::IOCTL_NT, &args);
+  if (result != 0) {
+    state.SkipWithError("ioctl failed!");
+    return;
+  }
+
+  for (auto _ : state)
+    fccmp_ioctl(fccmp::IOCTL_NT, &args);
+}
 
 /*
  * Benchmark the default no-operation fastcall function
