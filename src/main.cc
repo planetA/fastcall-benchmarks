@@ -18,15 +18,13 @@
 using fccmp::IOCTLFixture;
 using fce::ExamplesFixture;
 
-#define ALIGN(bytes) __attribute__((aligned(bytes)))
-
 /* Unused system call number on x86-64 */
 static const unsigned long NR_SYS_NI_SYSCALL = 335;
 static const unsigned long MAGIC = 0xBEEF;
 static const char MAGIC_CHAR = 0xAB;
 static const unsigned char MAGIC_INDEX =
     static_cast<unsigned char>(MAGIC % fccmp::ARRAY_LENGTH);
-static const char ALIGN(64) CHAR_SEQUENCE[fccmp::DATA_SIZE] = {MAGIC_CHAR};
+static const char CHAR_SEQUENCE[fccmp::DATA_SIZE] = {MAGIC_CHAR};
 
 /*
  * Benchmark the execution of an empty system call by using sys_ni_syscall,
