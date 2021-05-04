@@ -5,6 +5,7 @@
 #include "fccmp.h"
 #include <benchmark/benchmark.h>
 #include <fcntl.h>
+#include <iostream>
 #include <unistd.h>
 
 namespace fccmp {
@@ -19,9 +20,9 @@ public:
     }
   }
 
-  void TearDown(::benchmark::State &state) override {
-    if (close(fd) < 0)
-      state.SkipWithError("close failed!");
+  void TearDown(::benchmark::State &) override {
+    if (fd >= 0 && close(fd) < 0)
+      std::cerr << "ioctl close failed!\n";
   }
 
 protected:

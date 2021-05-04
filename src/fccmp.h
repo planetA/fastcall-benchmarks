@@ -15,8 +15,8 @@ struct array_args {
 };
 
 struct array_nt_args {
-	const char *data;
-	unsigned char index;
+  const char *data;
+  unsigned char index;
 };
 
 static const char *DEVICE_FILE = "/dev/fccmp";

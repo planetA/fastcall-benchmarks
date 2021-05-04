@@ -5,6 +5,7 @@
 #include "fastcall.h"
 #include <benchmark/benchmark.h>
 #include <fcntl.h>
+#include <iostream>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -28,15 +29,16 @@ public:
     }
   }
 
-  void TearDown(::benchmark::State &state) override {
-    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0)
-      state.SkipWithError("munmap failed!");
-    if (close(fd) < 0)
-      state.SkipWithError("close failed!");
+  void TearDown(::benchmark::State &) override {
+    if (args.fn_addr &&
+        munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0)
+      std::cerr << "fce munmap failed!\n";
+    if (fd >= 0 && close(fd) < 0)
+      std::cerr << "fce close failed!\n";
   }
 
 protected:
-  Arguments args;
+  Arguments args{};
 
   template <class... Args> int fastcall(Args... arguments) {
     return syscall(NR_SYSCALL, args.index, arguments...);

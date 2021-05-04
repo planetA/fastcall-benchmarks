@@ -80,6 +80,9 @@ BENCHMARK(syscall_nt);
  */
 BENCHMARK_F(IOCTLFixture, ioctl_noop)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   int result = fccmp_ioctl(fccmp::IOCTL_NOOP, nullptr);
   if (result != 0) {
     state.SkipWithError("ioctl failed!");
@@ -95,6 +98,9 @@ BENCHMARK_F(IOCTLFixture, ioctl_noop)
  */
 BENCHMARK_DEFINE_F(IOCTLFixture, ioctl_array)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   unsigned char size = static_cast<unsigned char>(state.range());
   struct fccmp::array_args args {
     CHAR_SEQUENCE, MAGIC_INDEX, size
@@ -118,6 +124,9 @@ BENCHMARK_REGISTER_F(IOCTLFixture, ioctl_array)
  */
 BENCHMARK_F(IOCTLFixture, ioctl_nt)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   struct fccmp::array_nt_args args {
     CHAR_SEQUENCE, MAGIC_INDEX
   };
@@ -153,6 +162,9 @@ BENCHMARK(fastcall_noop);
  */
 BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, fce::IOCTL_NOOP)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   if (fastcall() != 0) {
     state.SkipWithError("system call failed!");
     return;
@@ -167,6 +179,9 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_noop, fce::IOCTL_NOOP)
  */
 BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, fce::IOCTL_STACK)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   if (fastcall(MAGIC) != MAGIC) {
     state.SkipWithError("system call failed!");
     return;
@@ -181,6 +196,9 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_stack, fce::IOCTL_STACK)
  */
 BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, fce::IOCTL_PRIV)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   if (fastcall(MAGIC) != MAGIC + 1) {
     state.SkipWithError("system call failed!");
     return;
@@ -196,6 +214,9 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_priv, fce::IOCTL_PRIV)
 BENCHMARK_TEMPLATE_DEFINE_F(ExamplesFixture, fastcall_examples_array,
                             fce::IOCTL_ARRAY)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   if (fastcall(0, state.range()) != 0) {
     state.SkipWithError("system call failed!");
     return;
@@ -216,6 +237,9 @@ BENCHMARK_REGISTER_F(ExamplesFixture, fastcall_examples_array)
  */
 BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_nt, fce::IOCTL_NT)
 (benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
   if (fastcall(0, fce::DATA_SIZE) != 0) {
     state.SkipWithError("system call failed!");
     return;
