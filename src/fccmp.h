@@ -31,4 +31,7 @@ static const long NR_NT = 444;
 static const unsigned char DATA_SIZE = 64;
 static const unsigned char ARRAY_LENGTH = getpagesize() / DATA_SIZE;
 
+static const char VDSO_NOOP[] = "__vdso_fccmp_noop";
+typedef long VDSO_NOOP_TYPE();
+
 } // namespace fccmp

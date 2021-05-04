@@ -1,10 +1,10 @@
 cmake_minimum_required (VERSION 3.0)
 project (FASTCALL-BENCHMARKS)
 
-add_compile_options(-Wall -Wextra)
-
 find_package(benchmark REQUIRED)
 
-add_executable (fastcall-benchmarks src/main.cc)
+add_library(parse-vdso STATIC src/parse_vdso.c)
 
-target_link_libraries(fastcall-benchmarks benchmark::benchmark)
+add_executable(fastcall-benchmarks src/main.cc)
+target_compile_options(fastcall-benchmarks PUBLIC -Wall -Wextra)
+target_link_libraries(fastcall-benchmarks benchmark::benchmark parse-vdso)

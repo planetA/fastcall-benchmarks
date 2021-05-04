@@ -16,6 +16,8 @@
 #include <unistd.h>
 
 using fccmp::IOCTLFixture;
+using fccmp::VDSO_NOOP;
+using fccmp::VDSOFixture;
 using fce::ExamplesFixture;
 
 /* Unused system call number on x86-64 */
@@ -139,6 +141,23 @@ BENCHMARK_F(IOCTLFixture, ioctl_nt)
 
   for (auto _ : state)
     fccmp_ioctl(fccmp::IOCTL_NT, &args);
+}
+
+/*
+ * Benchmark the execution of the empty vDSO function provided by fccmp.
+ */
+BENCHMARK_TEMPLATE_F(VDSOFixture, vdso_noop, VDSO_NOOP)
+(benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
+  if (func()) {
+    state.SkipWithError("Unexpected vDSO function return value!");
+    return;
+  }
+
+  for (auto _ : state)
+    func();
 }
 
 /*

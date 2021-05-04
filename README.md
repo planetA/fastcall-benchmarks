@@ -31,6 +31,13 @@ To benchmark the fastcall mechanism _(requires the fastcall-enabled kernel)_:
 
 `$ ./build/fastcall-examples --benchmark_filter=fastcall`
 
+## Libraries
+
+fastcall-benchmarks uses following libraries:
+
+- [_benchmark_](https://github.com/google/benchmark) by _Google Inc_ under the [_Apache-2.0 License_](https://github.com/google/benchmark/blob/master/LICENSE)
+- [_parse_vdso.c_](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/testing/selftests/vDSO/parse_vdso.c?id=v5.11) by _Andrew Lutomirski_ under the [_Creative Commons Zero License, version 1.0_](http://creativecommons.org/publicdomain/zero/1.0/legalcode)
+
 ## Licence
 
 This program is free software: you can redistribute it and/or modify
