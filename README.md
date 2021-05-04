@@ -13,6 +13,7 @@ Benchmarks for the comparison of the [fastcall mechanism](https://github.com/vil
 ### Benchmark Kernels
 
 - [fastcall-enabled kernel](https://github.com/vilaureu/linux/tree/fastcall) with the fastcall-examples module loaded
+- [kernel with fccmp](https://github.com/vilaureu/linux/tree/fccmp) with the fccmp module loaded
 
 ## Build
 
@@ -23,13 +24,21 @@ $ cmake --build build/
 
 ## Usage
 
-To benchmark system calls:
-
-`$ ./build/fastcall-examples --benchmark_filter=syscall`
-
 To benchmark the fastcall mechanism _(requires the fastcall-enabled kernel)_:
 
-`$ ./build/fastcall-examples --benchmark_filter=fastcall`
+`$ ./build/fastcall-benchmarks --benchmark_filter=fastcall`
+
+To benchmark system calls _(requires the kernel with fccmp)_:
+
+`$ ./build/fastcall-benchmarks --benchmark_filter=syscall`
+
+To benchmark `ioctl` calls _(requires the kernel with fccmp)_:
+
+`$ ./build/fastcall-benchmarks --benchmark_filter=ioctl`
+
+To benchmark _vDSO_ calls _(requires the kernel with fccmp)_:
+
+`$ ./build/fastcall-benchmarks --benchmark_filter=vdso`
 
 ## Libraries
 
