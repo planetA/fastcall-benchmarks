@@ -58,6 +58,8 @@ static void syscall_array(benchmark::State &state) {
 
   for (auto _ : state)
     syscall(fccmp::NR_ARRAY, CHAR_SEQUENCE, MAGIC_INDEX, size);
+
+  state.SetBytesProcessed(state.iterations() * state.range());
 }
 BENCHMARK(syscall_array)->DenseRange(0, fccmp::DATA_SIZE, 16);
 
@@ -74,6 +76,8 @@ static void syscall_nt(benchmark::State &state) {
 
   for (auto _ : state)
     syscall(fccmp::NR_NT, CHAR_SEQUENCE, MAGIC_INDEX);
+
+  state.SetBytesProcessed(state.iterations() * fccmp::DATA_SIZE);
 }
 BENCHMARK(syscall_nt);
 
@@ -116,6 +120,8 @@ BENCHMARK_DEFINE_F(IOCTLFixture, ioctl_array)
 
   for (auto _ : state)
     fccmp_ioctl(fccmp::IOCTL_ARRAY, &args);
+
+  state.SetBytesProcessed(state.iterations() * state.range());
 }
 BENCHMARK_REGISTER_F(IOCTLFixture, ioctl_array)
     ->DenseRange(0, fccmp::DATA_SIZE, 16);
@@ -141,6 +147,8 @@ BENCHMARK_F(IOCTLFixture, ioctl_nt)
 
   for (auto _ : state)
     fccmp_ioctl(fccmp::IOCTL_NT, &args);
+
+  state.SetBytesProcessed(state.iterations() * fccmp::DATA_SIZE);
 }
 
 /*
