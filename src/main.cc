@@ -3,6 +3,7 @@
  * ioctl etc.
  */
 
+#include "config.h"
 #include "fastcall.h"
 #include "fccmp.h"
 #include "fccmp_fixture.h"
@@ -61,7 +62,7 @@ static void syscall_array(benchmark::State &state) {
 
   state.SetBytesProcessed(state.iterations() * state.range());
 }
-BENCHMARK(syscall_array)->DenseRange(0, fccmp::DATA_SIZE, 16);
+BENCHMARK(syscall_array)->DenseRange(0, fccmp::DATA_SIZE, ARRAY_STEP);
 
 /*
  * Benchmark the array-copying system call with a non-temporal hint provided by
@@ -124,7 +125,7 @@ BENCHMARK_DEFINE_F(IOCTLFixture, ioctl_array)
   state.SetBytesProcessed(state.iterations() * state.range());
 }
 BENCHMARK_REGISTER_F(IOCTLFixture, ioctl_array)
-    ->DenseRange(0, fccmp::DATA_SIZE, 16);
+    ->DenseRange(0, fccmp::DATA_SIZE, ARRAY_STEP);
 
 /*
  * Benchmark the array-copying ioctl handler with a non-temporal hint provided
@@ -257,7 +258,7 @@ BENCHMARK_TEMPLATE_DEFINE_F(ExamplesFixture, fastcall_examples_array,
   state.SetBytesProcessed(state.iterations() * state.range());
 }
 BENCHMARK_REGISTER_F(ExamplesFixture, fastcall_examples_array)
-    ->DenseRange(0, fce::DATA_SIZE, 16);
+    ->DenseRange(0, fce::DATA_SIZE, ARRAY_STEP);
 
 /*
  * Benchmark the array_nt fastcall function of fastcall-examples.

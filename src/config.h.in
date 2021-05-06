@@ -1,0 +1,1 @@
+#cmakedefine ARRAY_STEP @ARRAY_STEP@
