@@ -213,7 +213,7 @@ BENCHMARK_TEMPLATE_F(VDSOFixture, vdso_copy_nt, VDSO_COPY_NT)
     return;
 
   char *to_ptr = static_cast<char *>(
-      std::aligned_alloc(fccmp::ARRAY_LENGTH * fccmp::DATA_SIZE, AVX_ALIGN));
+      std::aligned_alloc(AVX_ALIGN, fccmp::ARRAY_LENGTH * fccmp::DATA_SIZE));
   std::unique_ptr<char, decltype(std::free) *> to{to_ptr, std::free};
 
   if (func(to.get(), CHAR_SEQUENCE, MAGIC_INDEX)) {
