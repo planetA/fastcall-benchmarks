@@ -34,4 +34,11 @@ static const unsigned char ARRAY_LENGTH = getpagesize() / DATA_SIZE;
 static const char VDSO_NOOP[] = "__vdso_fccmp_noop";
 typedef long VDSO_NOOP_TYPE();
 
+static const char VDSO_COPY_ARRAY[] = "__vdso_fccmp_copy_array";
+typedef long VDSO_COPY_ARRAY_TYPE(char *to, const char *from,
+                                  unsigned char index, unsigned long size);
+
+static const char VDSO_COPY_NT[] = "__vdso_fccmp_copy_nt";
+typedef long VDSO_COPY_NT_TYPE(char *to, const char *from, unsigned char index);
+
 } // namespace fccmp

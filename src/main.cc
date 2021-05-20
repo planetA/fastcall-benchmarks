@@ -11,12 +11,16 @@
 #include <benchmark/benchmark.h>
 #include <cerrno>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <unistd.h>
 
 using fccmp::IOCTLFixture;
+using fccmp::VDSO_COPY_ARRAY;
+using fccmp::VDSO_COPY_NT;
 using fccmp::VDSO_NOOP;
 using fccmp::VDSOFixture;
 using fce::ExamplesFixture;
@@ -28,6 +32,7 @@ static const char MAGIC_CHAR = 0xAB;
 static const unsigned char MAGIC_INDEX =
     static_cast<unsigned char>(MAGIC % fccmp::ARRAY_LENGTH);
 static const char CHAR_SEQUENCE[fccmp::DATA_SIZE] = {MAGIC_CHAR};
+static const std::size_t AVX_ALIGN = 32;
 
 /*
  * Benchmark the execution of an empty system call by using sys_ni_syscall,
@@ -167,6 +172,65 @@ BENCHMARK_TEMPLATE_F(VDSOFixture, vdso_noop, VDSO_NOOP)
 
   for (auto _ : state)
     func();
+}
+
+/*
+ * Benchmark the execution of the array copy vDSO function provided by fccmp.
+ */
+BENCHMARK_TEMPLATE_DEFINE_F(VDSOFixture, vdso_copy_array, VDSO_COPY_ARRAY)
+(benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
+  std::unique_ptr<char> to{new char[fccmp::ARRAY_LENGTH * fccmp::DATA_SIZE]};
+
+  if (func(to.get(), CHAR_SEQUENCE, MAGIC_INDEX, state.range())) {
+    state.SkipWithError("Unexpected vDSO function return value!");
+    return;
+  }
+
+  char *dst = to.get() + MAGIC_INDEX * fccmp::DATA_SIZE;
+  if (std::memcmp(dst, CHAR_SEQUENCE, state.range()) != 0) {
+    state.SkipWithError("Data not copied correctly!");
+    return;
+  }
+
+  for (auto _ : state)
+    func(to.get(), CHAR_SEQUENCE, MAGIC_INDEX, state.range());
+
+  state.SetBytesProcessed(state.iterations() * state.range());
+}
+BENCHMARK_REGISTER_F(VDSOFixture, vdso_copy_array)
+    ->DenseRange(0, fccmp::DATA_SIZE, ARRAY_STEP);
+
+/*
+ * Benchmark the execution of the non-temporal copy vDSO function provided by
+ * fccmp.
+ */
+BENCHMARK_TEMPLATE_F(VDSOFixture, vdso_copy_nt, VDSO_COPY_NT)
+(benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
+  char *to_ptr = static_cast<char *>(
+      std::aligned_alloc(fccmp::ARRAY_LENGTH * fccmp::DATA_SIZE, AVX_ALIGN));
+  std::unique_ptr<char, decltype(std::free) *> to{to_ptr, std::free};
+
+  if (func(to.get(), CHAR_SEQUENCE, MAGIC_INDEX)) {
+    state.SkipWithError("Unexpected vDSO function return value!");
+    return;
+  }
+
+  char *dst = to.get() + MAGIC_INDEX * fccmp::DATA_SIZE;
+  if (std::memcmp(dst, CHAR_SEQUENCE, fccmp::DATA_SIZE) != 0) {
+    state.SkipWithError("Data not copied correctly!");
+    return;
+  }
+
+  for (auto _ : state)
+    func(to.get(), CHAR_SEQUENCE, MAGIC_INDEX);
+
+  state.SetBytesProcessed(state.iterations() * fccmp::DATA_SIZE);
 }
 
 /*

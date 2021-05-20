@@ -65,5 +65,11 @@ template <const char *name> class VDSOFixture {
 template <>
 class VDSOFixture<VDSO_NOOP>
     : public VDSOFixtureShared<VDSO_NOOP, VDSO_NOOP_TYPE> {};
+template <>
+class VDSOFixture<VDSO_COPY_ARRAY>
+    : public VDSOFixtureShared<VDSO_COPY_ARRAY, VDSO_COPY_ARRAY_TYPE> {};
+template <>
+class VDSOFixture<VDSO_COPY_NT>
+    : public VDSOFixtureShared<VDSO_COPY_NT, VDSO_COPY_NT_TYPE> {};
 
 } // namespace fccmp
