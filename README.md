@@ -1,6 +1,9 @@
 # fastcall-benchmarks
 
-Benchmarks for the comparison of the [fastcall mechanism](https://github.com/vilaureu/linux/tree/fastcall) with system calls, ioctl etc.
+Benchmarks of the [fastcall mechanism](https://github.com/vilaureu/linux/tree/fastcall).
+
+This repository contains multiple benchmarks executables: *benchmark* and *misc*.
+Have a look at the directories with the same names.
 
 ## Dependencies
 
@@ -8,7 +11,6 @@ Benchmarks for the comparison of the [fastcall mechanism](https://github.com/vil
 
 - _GCC_ or _Clang_
 - _CMake_
-- [_benchmark_](https://github.com/google/benchmark)
 
 ### Benchmark Kernels
 
@@ -18,27 +20,9 @@ Benchmarks for the comparison of the [fastcall mechanism](https://github.com/vil
 ## Build
 
 ```
-$ cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release`
+$ cmake -S . -B build/ -DCMAKE_BUILD_TYPE=Release
 $ cmake --build build/
 ```
-
-## Usage
-
-To benchmark the fastcall mechanism _(requires the fastcall-enabled kernel)_:
-
-`$ ./build/fastcall-benchmarks --benchmark_filter=fastcall`
-
-To benchmark system calls _(requires the kernel with fccmp)_:
-
-`$ ./build/fastcall-benchmarks --benchmark_filter=syscall`
-
-To benchmark `ioctl` calls _(requires the kernel with fccmp)_:
-
-`$ ./build/fastcall-benchmarks --benchmark_filter=ioctl`
-
-To benchmark _vDSO_ calls _(requires the kernel with fccmp)_:
-
-`$ ./build/fastcall-benchmarks --benchmark_filter=vdso`
 
 ## Libraries
 
