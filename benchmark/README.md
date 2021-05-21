@@ -11,16 +11,16 @@ These benchmarks use the [_benchmark_](https://github.com/google/benchmark) libr
 
 To benchmark the fastcall mechanism _(requires the fastcall-enabled kernel)_:
 
-`$ ./build/fastcall-benchmarks --benchmark_filter=fastcall`
+`$ ./build/benchmark/fastcall-benchmark --benchmark_filter=fastcall`
 
 To benchmark system calls _(requires the kernel with fccmp)_:
 
-`$ ./build/fastcall-benchmarks --benchmark_filter=syscall`
+`$ ./build/benchmark/fastcall-benchmark --benchmark_filter=syscall`
 
 To benchmark `ioctl` calls _(requires the kernel with fccmp)_:
 
-`$ ./build/fastcall-benchmarks --benchmark_filter=ioctl`
+`$ ./build/benchmark/fastcall-benchmark --benchmark_filter=ioctl`
 
 To benchmark _vDSO_ calls _(requires the kernel with fccmp)_:
 
-`$ ./build/fastcall-benchmarks --benchmark_filter=vdso`
+`$ ./build/benchmark/fastcall-benchmark --benchmark_filter=vdso`

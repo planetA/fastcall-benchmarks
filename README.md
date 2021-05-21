@@ -2,7 +2,7 @@
 
 Benchmarks of the [fastcall mechanism](https://github.com/vilaureu/linux/tree/fastcall).
 
-This repository contains multiple benchmarks executables: *benchmark* and *misc*.
+This repository contains multiple benchmarks executables: _benchmark_ and _misc_.
 Have a look at the directories with the same names.
 
 ## Dependencies
@@ -30,6 +30,7 @@ fastcall-benchmarks uses following libraries:
 
 - [_benchmark_](https://github.com/google/benchmark) by _Google Inc_ under the [_Apache-2.0 License_](https://github.com/google/benchmark/blob/master/LICENSE)
 - [_parse_vdso.c_](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/testing/selftests/vDSO/parse_vdso.c?id=v5.11) by _Andrew Lutomirski_ under the [_Creative Commons Zero License, version 1.0_](http://creativecommons.org/publicdomain/zero/1.0/legalcode)
+- [_Boost_](https://www.boost.org/) under the [_Boost Software License, Version 1.0_](https://www.boost.org/LICENSE_1_0.txt)
 
 ## Licence
 
