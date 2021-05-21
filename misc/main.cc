@@ -1,19 +1,46 @@
 #include "controller.h"
+#include "fastcall.h"
+#include "fce.h"
 #include <boost/program_options.hpp>
+#include <cerrno>
 #include <iostream>
 #include <string>
+#include <sys/mman.h>
 
 using namespace ctrl;
 namespace po = boost::program_options;
 
-static const std::uint64_t DEFAULT_WARMUP_ITERS = 1e6;
-static const std::uint64_t DEFAULT_BENCH_ITERS = 1e6;
+static const std::uint64_t DEFAULT_WARMUP_ITERS = 1e4;
+static const std::uint64_t DEFAULT_BENCH_ITERS = 1e4;
 
 void benchmark_noop(Controller controller) {
-  while(controller.cont()) {
+  while (controller.cont()) {
     controller.start_timer();
     controller.end_timer();
   }
+}
+
+int benchmark_registration_minimal(Controller controller) {
+  fce::ioctl_args args;
+  fce::FileDescriptor fd{};
+
+  while (controller.cont()) {
+    controller.start_timer();
+    int err = fd.io(fce::IOCTL_NOOP, &args);
+    controller.end_timer();
+
+    if (err < 0) {
+      std::cerr << "ioctl failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+
+    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
+      std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -54,9 +81,11 @@ int main(int argc, char *argv[]) {
   }
 
   Controller controller{warmup_iters, bench_iters};
-  if (benchmark == "noop") {
+  if (benchmark == "noop")
     benchmark_noop(controller);
-  } else {
+  else if (benchmark == "registration-minimal")
+    return benchmark_registration_minimal(controller);
+  else {
     std::cerr << "unknown benchmark " << benchmark << '\n';
     return 1;
   }
