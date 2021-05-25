@@ -13,6 +13,9 @@ namespace po = boost::program_options;
 static const std::uint64_t DEFAULT_WARMUP_ITERS = 1e4;
 static const std::uint64_t DEFAULT_BENCH_ITERS = 1e4;
 
+/*
+ * Benchmark for just measuring the overhead of the timing functions.
+ */
 void benchmark_noop(Controller controller) {
   while (controller.cont()) {
     controller.start_timer();
@@ -20,6 +23,10 @@ void benchmark_noop(Controller controller) {
   }
 }
 
+/*
+ * Benchmark of the fastcall registration process for a function without
+ * additional mappings.
+ */
 int benchmark_registration_minimal(Controller controller) {
   fce::ioctl_args args;
   fce::FileDescriptor fd{};
@@ -81,12 +88,17 @@ int main(int argc, char *argv[]) {
   }
 
   Controller controller{warmup_iters, bench_iters};
-  if (benchmark == "noop")
-    benchmark_noop(controller);
-  else if (benchmark == "registration-minimal")
-    return benchmark_registration_minimal(controller);
-  else {
-    std::cerr << "unknown benchmark " << benchmark << '\n';
+  try {
+    if (benchmark == "noop")
+      benchmark_noop(controller);
+    else if (benchmark == "registration-minimal")
+      return benchmark_registration_minimal(controller);
+    else {
+      std::cerr << "unknown benchmark " << benchmark << '\n';
+      return 1;
+    }
+  } catch (fce::Error &e) {
+    std::cerr << e.what() << '\n';
     return 1;
   }
 

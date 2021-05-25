@@ -31,7 +31,11 @@ public:
   /*
    * Start a timed benchmark section.
    */
-  void INLINE start_timer() { start = steady_clock::now(); }
+  void INLINE start_timer() {
+    start = steady_clock::now();
+    // prevent reordering of instructions before the start
+    asm volatile("lfence" : : : "memory");
+  }
 
   /*
    * End a timed benchmark section.
@@ -39,6 +43,8 @@ public:
    * Prints the result if not still in the warmup phase.
    */
   void INLINE end_timer() {
+    // prevent reordering of instructions after the end
+    asm volatile("" : : : "memory");
     steady_clock::duration duration{steady_clock::now() - start};
     auto nanos = chrono::duration_cast<chrono::nanoseconds>(duration);
     if (iters < bench_iters)
