@@ -50,6 +50,33 @@ int benchmark_registration_minimal(Controller controller) {
   return 0;
 }
 
+/*
+ * Benchmark of the fastcall registration process for a function with
+ * two additional mappings.
+ */
+int benchmark_registration_mappings(Controller controller) {
+  fce::array_args args;
+  fce::FileDescriptor fd{};
+
+  while (controller.cont()) {
+    controller.start_timer();
+    int err = fd.io(fce::IOCTL_ARRAY, &args);
+    controller.end_timer();
+
+    if (err < 0) {
+      std::cerr << "ioctl failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+
+    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
+      std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 int main(int argc, char *argv[]) {
   std::uint64_t warmup_iters, bench_iters;
   std::string benchmark;
@@ -93,6 +120,8 @@ int main(int argc, char *argv[]) {
       benchmark_noop(controller);
     else if (benchmark == "registration-minimal")
       return benchmark_registration_minimal(controller);
+    else if (benchmark == "registration-mappings")
+      return benchmark_registration_mappings(controller);
     else {
       std::cerr << "unknown benchmark " << benchmark << '\n';
       return 1;
