@@ -25,7 +25,7 @@ static void benchmark_noop(Controller &controller) {
 }
 
 /*
- * Benchmark of the fastcall registration process for a function without
+ * Benchmark of the fastcall registration process of a function without
  * additional mappings.
  */
 static int benchmark_registration_minimal(Controller &controller) {
@@ -34,13 +34,8 @@ static int benchmark_registration_minimal(Controller &controller) {
 
   while (controller.cont()) {
     controller.start_timer();
-    int err = fd.io(fce::IOCTL_NOOP, &args);
+    fd.io(fce::IOCTL_NOOP, &args);
     controller.end_timer();
-
-    if (err < 0) {
-      std::cerr << "ioctl failed: " << std::strerror(errno) << '\n';
-      return 1;
-    }
 
     fce::deregister(args);
   }
@@ -49,7 +44,7 @@ static int benchmark_registration_minimal(Controller &controller) {
 }
 
 /*
- * Benchmark of the fastcall registration process for a function with
+ * Benchmark of the fastcall registration process of a function with
  * two additional mappings.
  */
 static int benchmark_registration_mappings(Controller &controller) {
@@ -58,15 +53,48 @@ static int benchmark_registration_mappings(Controller &controller) {
 
   while (controller.cont()) {
     controller.start_timer();
-    int err = fd.io(fce::IOCTL_ARRAY, &args);
+    fd.io(fce::IOCTL_ARRAY, &args);
     controller.end_timer();
 
-    if (err < 0) {
-      std::cerr << "ioctl failed: " << std::strerror(errno) << '\n';
-      return 1;
-    }
-
     fce::deregister(args);
+  }
+
+  return 0;
+}
+
+/*
+ * Benchmark of the fastcall deregistration process of a function without
+ * additional mappings.
+ */
+static int benchmark_deregistration_minimal(Controller &controller) {
+  fce::ioctl_args args;
+  fce::FileDescriptor fd{};
+
+  while (controller.cont()) {
+    fd.io(fce::IOCTL_NOOP, &args);
+
+    controller.start_timer();
+    fce::deregister(args);
+    controller.end_timer();
+  }
+
+  return 0;
+}
+
+/*
+ * Benchmark of the fastcall deregistration process of a function with
+ * two additional mappings.
+ */
+static int benchmark_deregistration_mappings(Controller &controller) {
+  fce::array_args args;
+  fce::FileDescriptor fd{};
+
+  while (controller.cont()) {
+    fd.io(fce::IOCTL_ARRAY, &args);
+
+    controller.start_timer();
+    fce::deregister(args);
+    controller.end_timer();
   }
 
   return 0;
@@ -111,7 +139,6 @@ static int benchmark_fork_fastcall(Controller &controller) {
   return 0;
 }
 
-
 /*
  * Benchmark of a simple vfork.
  *
@@ -139,7 +166,6 @@ static int benchmark_vfork_simple(Controller &controller) {
   return 0;
 }
 
-
 /*
  * Benchmark of a vfork of a process which registered many fastcalls.
  */
@@ -152,7 +178,6 @@ static int benchmark_vfork_fastcall(Controller &controller) {
 
   return 0;
 }
-
 
 int main(int argc, char *argv[]) {
   std::uint64_t warmup_iters, bench_iters;
@@ -199,6 +224,10 @@ int main(int argc, char *argv[]) {
       return benchmark_registration_minimal(controller);
     else if (benchmark == "registration-mappings")
       return benchmark_registration_mappings(controller);
+    else if (benchmark == "deregistration-minimal")
+      return benchmark_deregistration_minimal(controller);
+    else if (benchmark == "deregistration-mappings")
+      return benchmark_deregistration_mappings(controller);
     else if (benchmark == "fork-simple")
       return benchmark_fork_simple(controller);
     else if (benchmark == "fork-fastcall")

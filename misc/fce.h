@@ -46,6 +46,7 @@ private:
 };
 
 const char FDMsg[]{"failed to open device driver"};
+const char IOCTLError[]{"ioctl failed"};
 
 /*
  * Manage a file descriptor with the RAII principle.
@@ -66,7 +67,11 @@ public:
   /*
    * ioctl function for the wrapped file descriptor.
    */
-  int io(unsigned type, void *args) { return ioctl(fd, type, args); }
+  void io(unsigned type, void *args) {
+    if (ioctl(fd, type, args) < 0) {
+      throw ErrnoError<IOCTLError>{errno};
+    }
+  }
 
 private:
   int fd;
@@ -74,13 +79,12 @@ private:
 
 const char MunmapMsg[]{"fce munmap failed"};
 
-template <typename Args> static void deregister(Args &args) {
+template <typename Args>
+static void __attribute__((always_inline)) inline deregister(Args &args) {
   if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
     throw ErrnoError<MunmapMsg>{errno};
   }
 }
-
-const char IOCTLError[]{"ioctl failed"};
 
 /*
  * Registers a lot of fastcalls until deconstruction.
@@ -88,12 +92,8 @@ const char IOCTLError[]{"ioctl failed"};
 class ManyFastcalls {
 public:
   ManyFastcalls() {
-    for (auto &args : args_array) {
-      int err = fd.io(fce::IOCTL_ARRAY, &args);
-      if (err < 0) {
-        throw ErrnoError<IOCTLError>{errno};
-      }
-    }
+    for (auto &args : args_array)
+      fd.io(fce::IOCTL_ARRAY, &args);
   }
   ~ManyFastcalls() {
     try {
