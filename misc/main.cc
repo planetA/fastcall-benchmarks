@@ -1,22 +1,26 @@
 #include "controller.h"
 #include "fastcall.h"
 #include "fce.h"
+#include <array>
 #include <boost/program_options.hpp>
 #include <cerrno>
 #include <iostream>
 #include <string>
 #include <sys/mman.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 using namespace ctrl;
 namespace po = boost::program_options;
 
 static const std::uint64_t DEFAULT_WARMUP_ITERS = 1e4;
 static const std::uint64_t DEFAULT_BENCH_ITERS = 1e4;
+static const unsigned FORK_FASTCALL_COUNT = 100;
 
 /*
  * Benchmark for just measuring the overhead of the timing functions.
  */
-void benchmark_noop(Controller controller) {
+void benchmark_noop(Controller &controller) {
   while (controller.cont()) {
     controller.start_timer();
     controller.end_timer();
@@ -27,7 +31,7 @@ void benchmark_noop(Controller controller) {
  * Benchmark of the fastcall registration process for a function without
  * additional mappings.
  */
-int benchmark_registration_minimal(Controller controller) {
+int benchmark_registration_minimal(Controller &controller) {
   fce::ioctl_args args;
   fce::FileDescriptor fd{};
 
@@ -54,7 +58,7 @@ int benchmark_registration_minimal(Controller controller) {
  * Benchmark of the fastcall registration process for a function with
  * two additional mappings.
  */
-int benchmark_registration_mappings(Controller controller) {
+int benchmark_registration_mappings(Controller &controller) {
   fce::array_args args;
   fce::FileDescriptor fd{};
 
@@ -68,6 +72,61 @@ int benchmark_registration_mappings(Controller controller) {
       return 1;
     }
 
+    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
+      std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+/*
+ * Benchmark of a simple fork.
+ *
+ * The benchmark end is timed on the parent because the kernel executes it
+ * first.
+ */
+int benchmark_simple_fork(Controller &controller) {
+  while (controller.cont()) {
+    controller.start_timer();
+    int pid = fork();
+    if (pid < 0) {
+      std::cerr << "fork failed: " << std::strerror(errno) << '\n';
+      return 1;
+    } else if (pid == 0)
+      exit(0);
+    controller.end_timer();
+
+    if (waitpid(pid, nullptr, 0) < 0) {
+      std::cerr << "waiting for child failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+/*
+ * Benchmark of a fork of a process which registered many fastcalls.
+ */
+int benchmark_fastcall_fork(Controller &controller) {
+  std::array<fce::array_args, FORK_FASTCALL_COUNT> args_array{};
+  fce::FileDescriptor fd{};
+
+  for (auto &args : args_array) {
+    int err = fd.io(fce::IOCTL_ARRAY, &args);
+    if (err < 0) {
+      std::cerr << "ioctl failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+  }
+
+  int err = benchmark_simple_fork(controller);
+  if (err)
+    return err;
+
+  for (auto &args : args_array) {
     if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
       std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
       return 1;
@@ -122,6 +181,10 @@ int main(int argc, char *argv[]) {
       return benchmark_registration_minimal(controller);
     else if (benchmark == "registration-mappings")
       return benchmark_registration_mappings(controller);
+    else if (benchmark == "simple-fork")
+      return benchmark_simple_fork(controller);
+    else if (benchmark == "fastcall-fork")
+      return benchmark_fastcall_fork(controller);
     else {
       std::cerr << "unknown benchmark " << benchmark << '\n';
       return 1;
