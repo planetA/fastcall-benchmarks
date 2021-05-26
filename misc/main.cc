@@ -1,7 +1,6 @@
 #include "controller.h"
 #include "fastcall.h"
 #include "fce.h"
-#include <array>
 #include <boost/program_options.hpp>
 #include <cerrno>
 #include <iostream>
@@ -14,12 +13,11 @@ namespace po = boost::program_options;
 
 static const std::uint64_t DEFAULT_WARMUP_ITERS = 1e4;
 static const std::uint64_t DEFAULT_BENCH_ITERS = 1e4;
-static const unsigned FORK_FASTCALL_COUNT = 100;
 
 /*
  * Benchmark for just measuring the overhead of the timing functions.
  */
-void benchmark_noop(Controller &controller) {
+static void benchmark_noop(Controller &controller) {
   while (controller.cont()) {
     controller.start_timer();
     controller.end_timer();
@@ -30,7 +28,7 @@ void benchmark_noop(Controller &controller) {
  * Benchmark of the fastcall registration process for a function without
  * additional mappings.
  */
-int benchmark_registration_minimal(Controller &controller) {
+static int benchmark_registration_minimal(Controller &controller) {
   fce::ioctl_args args;
   fce::FileDescriptor fd{};
 
@@ -54,7 +52,7 @@ int benchmark_registration_minimal(Controller &controller) {
  * Benchmark of the fastcall registration process for a function with
  * two additional mappings.
  */
-int benchmark_registration_mappings(Controller &controller) {
+static int benchmark_registration_mappings(Controller &controller) {
   fce::array_args args;
   fce::FileDescriptor fd{};
 
@@ -80,7 +78,7 @@ int benchmark_registration_mappings(Controller &controller) {
  * The benchmark end is timed on the parent because the kernel executes it
  * first.
  */
-int benchmark_fork_simple(Controller &controller) {
+static int benchmark_fork_simple(Controller &controller) {
   while (controller.cont()) {
     controller.start_timer();
     int pid = fork();
@@ -103,27 +101,58 @@ int benchmark_fork_simple(Controller &controller) {
 /*
  * Benchmark of a fork of a process which registered many fastcalls.
  */
-int benchmark_fork_fastcall(Controller &controller) {
-  std::array<fce::array_args, FORK_FASTCALL_COUNT> args_array{};
-  fce::FileDescriptor fd{};
-
-  for (auto &args : args_array) {
-    int err = fd.io(fce::IOCTL_ARRAY, &args);
-    if (err < 0) {
-      std::cerr << "ioctl failed: " << std::strerror(errno) << '\n';
-      return 1;
-    }
-  }
+static int benchmark_fork_fastcall(Controller &controller) {
+  fce::ManyFastcalls _{};
 
   int err = benchmark_fork_simple(controller);
   if (err)
     return err;
 
-  for (auto &args : args_array)
-    fce::deregister(args);
+  return 0;
+}
+
+
+/*
+ * Benchmark of a simple vfork.
+ *
+ * The benchmark end is timed on the child side because the kernel executes it
+ * first.
+ */
+static int benchmark_vfork_simple(Controller &controller) {
+  while (controller.cont()) {
+    controller.start_timer();
+    int pid = vfork();
+    if (pid < 0) {
+      std::cerr << "fork failed: " << std::strerror(errno) << '\n';
+      return 1;
+    } else if (pid == 0) {
+      controller.end_timer();
+      _exit(0);
+    }
+
+    if (waitpid(pid, nullptr, 0) < 0) {
+      std::cerr << "waiting for child failed: " << std::strerror(errno) << '\n';
+      return 1;
+    }
+  }
 
   return 0;
 }
+
+
+/*
+ * Benchmark of a vfork of a process which registered many fastcalls.
+ */
+static int benchmark_vfork_fastcall(Controller &controller) {
+  fce::ManyFastcalls _{};
+
+  int err = benchmark_vfork_simple(controller);
+  if (err)
+    return err;
+
+  return 0;
+}
+
 
 int main(int argc, char *argv[]) {
   std::uint64_t warmup_iters, bench_iters;
@@ -174,6 +203,10 @@ int main(int argc, char *argv[]) {
       return benchmark_fork_simple(controller);
     else if (benchmark == "fork-fastcall")
       return benchmark_fork_fastcall(controller);
+    else if (benchmark == "vfork-simple")
+      return benchmark_vfork_simple(controller);
+    else if (benchmark == "vfork-fastcall")
+      return benchmark_vfork_fastcall(controller);
     else {
       std::cerr << "unknown benchmark " << benchmark << '\n';
       return 1;

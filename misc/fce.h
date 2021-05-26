@@ -1,4 +1,5 @@
 #include "fastcall.h"
+#include <array>
 #include <cerrno>
 #include <cstring>
 #include <exception>
@@ -11,6 +12,8 @@
 #include <unistd.h>
 
 namespace fce {
+
+static const unsigned FORK_FASTCALL_COUNT = 100;
 
 /*
  * Base exception for the fce namespace.
@@ -71,10 +74,39 @@ private:
 
 const char MunmapMsg[]{"fce munmap failed"};
 
-template <typename Args> void deregister(Args &args) {
+template <typename Args> static void deregister(Args &args) {
   if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
     throw ErrnoError<MunmapMsg>{errno};
   }
 }
+
+const char IOCTLError[]{"ioctl failed"};
+
+/*
+ * Registers a lot of fastcalls until deconstruction.
+ */
+class ManyFastcalls {
+public:
+  ManyFastcalls() {
+    for (auto &args : args_array) {
+      int err = fd.io(fce::IOCTL_ARRAY, &args);
+      if (err < 0) {
+        throw ErrnoError<IOCTLError>{errno};
+      }
+    }
+  }
+  ~ManyFastcalls() {
+    try {
+      for (auto &args : args_array)
+        fce::deregister(args);
+    } catch (Error &e) {
+      std::cerr << e.what() << '\n';
+    }
+  }
+
+private:
+  fce::FileDescriptor fd{};
+  std::array<fce::array_args, FORK_FASTCALL_COUNT> args_array{};
+};
 
 } // namespace fce
