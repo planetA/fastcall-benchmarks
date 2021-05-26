@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 namespace fce {
@@ -24,11 +25,11 @@ private:
 };
 
 /*
- * A file descriptor exception.
+ * An error described by an errno.
  */
-class FDError : public Error {
+template <const char *Prefix> class ErrnoError : public Error {
 public:
-  FDError(int nr) : Error(get_msg(nr)) {}
+  ErrnoError(int nr) : Error(get_msg(nr)) {}
 
 private:
   /*
@@ -36,10 +37,12 @@ private:
    */
   static std::string get_msg(int nr) {
     std::stringstream st{};
-    st << "failed to open device driver: " << std::strerror(nr);
+    st << Prefix << ": " << std::strerror(nr);
     return st.str();
   }
 };
+
+const char FDMsg[]{"failed to open device driver"};
 
 /*
  * Manage a file descriptor with the RAII principle.
@@ -48,7 +51,7 @@ class FileDescriptor {
 public:
   FileDescriptor() : fd{open(fce::DEVICE_FILE, O_RDONLY)} {
     if (fd < 0) {
-      throw FDError(errno);
+      throw ErrnoError<FDMsg>(errno);
     }
   }
   ~FileDescriptor() {
@@ -65,5 +68,13 @@ public:
 private:
   int fd;
 };
+
+const char MunmapMsg[]{"fce munmap failed"};
+
+template <typename Args> void deregister(Args &args) {
+  if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
+    throw ErrnoError<MunmapMsg>{errno};
+  }
+}
 
 } // namespace fce

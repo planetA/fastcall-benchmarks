@@ -6,7 +6,6 @@
 #include <cerrno>
 #include <iostream>
 #include <string>
-#include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -45,10 +44,7 @@ int benchmark_registration_minimal(Controller &controller) {
       return 1;
     }
 
-    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
-      std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
-      return 1;
-    }
+    fce::deregister(args);
   }
 
   return 0;
@@ -72,10 +68,7 @@ int benchmark_registration_mappings(Controller &controller) {
       return 1;
     }
 
-    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
-      std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
-      return 1;
-    }
+    fce::deregister(args);
   }
 
   return 0;
@@ -87,7 +80,7 @@ int benchmark_registration_mappings(Controller &controller) {
  * The benchmark end is timed on the parent because the kernel executes it
  * first.
  */
-int benchmark_simple_fork(Controller &controller) {
+int benchmark_fork_simple(Controller &controller) {
   while (controller.cont()) {
     controller.start_timer();
     int pid = fork();
@@ -110,7 +103,7 @@ int benchmark_simple_fork(Controller &controller) {
 /*
  * Benchmark of a fork of a process which registered many fastcalls.
  */
-int benchmark_fastcall_fork(Controller &controller) {
+int benchmark_fork_fastcall(Controller &controller) {
   std::array<fce::array_args, FORK_FASTCALL_COUNT> args_array{};
   fce::FileDescriptor fd{};
 
@@ -122,16 +115,12 @@ int benchmark_fastcall_fork(Controller &controller) {
     }
   }
 
-  int err = benchmark_simple_fork(controller);
+  int err = benchmark_fork_simple(controller);
   if (err)
     return err;
 
-  for (auto &args : args_array) {
-    if (munmap(reinterpret_cast<void *>(args.fn_addr), args.fn_len) < 0) {
-      std::cerr << "fce munmap failed: " << std::strerror(errno) << '\n';
-      return 1;
-    }
-  }
+  for (auto &args : args_array)
+    fce::deregister(args);
 
   return 0;
 }
@@ -181,10 +170,10 @@ int main(int argc, char *argv[]) {
       return benchmark_registration_minimal(controller);
     else if (benchmark == "registration-mappings")
       return benchmark_registration_mappings(controller);
-    else if (benchmark == "simple-fork")
-      return benchmark_simple_fork(controller);
-    else if (benchmark == "fastcall-fork")
-      return benchmark_fastcall_fork(controller);
+    else if (benchmark == "fork-simple")
+      return benchmark_fork_simple(controller);
+    else if (benchmark == "fork-fastcall")
+      return benchmark_fork_fastcall(controller);
     else {
       std::cerr << "unknown benchmark " << benchmark << '\n';
       return 1;
