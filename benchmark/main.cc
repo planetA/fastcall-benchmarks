@@ -238,14 +238,14 @@ BENCHMARK_TEMPLATE_F(VDSOFixture, vdso_copy_nt, VDSO_COPY_NT)
  * available to any process.
  */
 static void fastcall_noop(benchmark::State &state) {
-  syscall(fce::NR_SYSCALL, -1);
-  if (errno != EINVAL) {
+  long err = fce::fastcall_syscall(-1);
+  if (err >= 0 || errno != EINVAL) {
     state.SkipWithError("Fastcall system call not available!");
     return;
   }
 
   for (auto _ : state)
-    syscall(fce::NR_SYSCALL, -1);
+    fce::fastcall_syscall(-1);
 }
 BENCHMARK(fastcall_noop);
 

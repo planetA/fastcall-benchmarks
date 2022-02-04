@@ -3,7 +3,13 @@
  */
 #pragma once
 
+#include <cerrno>
 #include <sys/ioctl.h>
+#include <unistd.h>
+
+#ifdef __aarch64__
+extern "C" long invoke_fastcall(unsigned long, ...);
+#endif
 
 namespace fce {
 
@@ -37,5 +43,20 @@ static const unsigned IOCTL_ARRAY = ioctl_array(3);
 static const unsigned IOCTL_NT = ioctl_array(4);
 static const unsigned DATA_SIZE = 64;
 static const unsigned ARRAY_SIZE = 64;
+
+template <class... Args>
+static inline long fastcall_syscall(unsigned char fastcall_number,
+                                    Args... arguments) {
+#ifdef __aarch64__
+  long result = invoke_fastcall(fastcall_number, arguments...);
+  if (result < 0 && result >= -4095) {
+    errno = -result;
+    result = -1;
+  }
+  return result;
+#else
+  return syscall(NR_SYSCALL, fastcall_number, arguments...);
+#endif
+}
 
 } // namespace fce

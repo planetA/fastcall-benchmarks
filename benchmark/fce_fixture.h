@@ -41,7 +41,7 @@ protected:
   Arguments args{};
 
   template <class... Args> int fastcall(Args... arguments) {
-    return syscall(NR_SYSCALL, args.index, arguments...);
+    return fastcall_syscall(args.index, arguments...);
   }
 
 private:
