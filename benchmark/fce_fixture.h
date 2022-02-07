@@ -40,7 +40,7 @@ public:
 protected:
   Arguments args{};
 
-  template <class... Args> int fastcall(Args... arguments) {
+  template <class... Args> long fastcall(Args... arguments) {
     return fastcall_syscall(args.index, arguments...);
   }
 

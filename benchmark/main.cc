@@ -25,7 +25,7 @@ using fccmp::VDSO_NOOP;
 using fccmp::VDSOFixture;
 using fce::ExamplesFixture;
 
-/* Unused system call number on x86-64 */
+/* Unused system call number on x86-64 and arm64 */
 static const unsigned long NR_SYS_NI_SYSCALL = 335;
 static const unsigned long MAGIC = 0xBEEF;
 static const char MAGIC_CHAR = 0xAB;
