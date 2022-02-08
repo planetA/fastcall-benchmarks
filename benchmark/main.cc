@@ -4,10 +4,10 @@
  */
 
 #include "config.h"
-#include "fastcall.h"
-#include "fccmp.h"
-#include "fccmp_fixture.h"
-#include "fce_fixture.h"
+#include "fastcall.hpp"
+#include "fccmp.hpp"
+#include "fccmp_fixture.hpp"
+#include "fce_fixture.hpp"
 #include <benchmark/benchmark.h>
 #include <cerrno>
 #include <cstdio>

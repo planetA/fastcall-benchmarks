@@ -2,7 +2,7 @@
  * Fixtures for fccmp.
  */
 
-#include "fccmp.h"
+#include "fccmp.hpp"
 #include <benchmark/benchmark.h>
 #include <fcntl.h>
 #include <iostream>

@@ -2,7 +2,7 @@
  * ExamplesFixture for the fastcall-examples driver.
  */
 
-#include "fastcall.h"
+#include "fastcall.hpp"
 #include <benchmark/benchmark.h>
 #include <fcntl.h>
 #include <iostream>

@@ -1,6 +1,6 @@
-#include "controller.h"
-#include "fastcall.h"
-#include "fce.h"
+#include "controller.hpp"
+#include "fastcall.hpp"
+#include "fce.hpp"
 #include <boost/program_options.hpp>
 #include <cerrno>
 #include <iostream>
