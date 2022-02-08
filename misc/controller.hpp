@@ -34,7 +34,19 @@ public:
   void INLINE start_timer() {
     start = steady_clock::now();
     // prevent reordering of instructions before the start
-    asm volatile("lfence" : : : "memory");
+    asm volatile(
+#ifdef __amd64__
+        "lfence"
+#else
+        /*
+         * At least on arm64, isb barriers are already used in the vDSO
+         * functions.
+         */
+        ""
+#endif
+        :
+        :
+        : "memory");
   }
 
   /*
