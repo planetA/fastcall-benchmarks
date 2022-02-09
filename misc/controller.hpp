@@ -60,7 +60,7 @@ public:
     steady_clock::duration duration{steady_clock::now() - start};
     auto nanos = chrono::duration_cast<chrono::nanoseconds>(duration);
     if (iters < bench_iters)
-      std::cout << nanos.count() << '\n';
+      std::cout << nanos.count() << std::endl;
   }
 
 private:
