@@ -1,6 +1,7 @@
 #include "controller.hpp"
 #include "fastcall.hpp"
 #include "fce.hpp"
+#include "options.hpp"
 #include <boost/program_options.hpp>
 #include <cerrno>
 #include <iostream>
@@ -9,10 +10,6 @@
 #include <unistd.h>
 
 using namespace ctrl;
-namespace po = boost::program_options;
-
-static const std::uint64_t DEFAULT_WARMUP_ITERS = 1e4;
-static const std::uint64_t DEFAULT_BENCH_ITERS = 1e4;
 
 /*
  * Benchmark for just measuring the overhead of the timing functions.
@@ -180,44 +177,12 @@ static int benchmark_vfork_fastcall(Controller &controller) {
 }
 
 int main(int argc, char *argv[]) {
-  std::uint64_t warmup_iters, bench_iters;
-  std::string benchmark;
-  bool error = false;
+  auto opt = options::parse_cmd(argc, argv);
 
-  po::options_description desc("Options");
-  desc.add_options()("help", "produce help message");
-  desc.add_options()("warmup,w",
-                     po::value<std::uint64_t>(&warmup_iters)
-                         ->default_value(DEFAULT_WARMUP_ITERS),
-                     "warmup iterations");
-  desc.add_options()("iter,i",
-                     po::value<std::uint64_t>(&bench_iters)
-                         ->default_value(DEFAULT_BENCH_ITERS),
-                     "benchmark iterations w/o warmup");
-  desc.add_options()("benchmark,b", po::value<std::string>(&benchmark),
-                     "benchmark to run");
-  po::positional_options_description pos;
-  pos.add("benchmark", 1);
-
-  po::variables_map vm;
+  Controller controller{opt.warmup_iters, opt.bench_iters};
   try {
-    auto parser =
-        po::command_line_parser(argc, argv).options(desc).positional(pos).run();
-    po::store(parser, vm);
-    po::notify(vm);
-  } catch (po::error &e) {
-    std::cerr << e.what() << '\n';
-    error = true;
-  }
+    auto &benchmark = opt.benchmark;
 
-  if (vm.count("help") || !vm.count("benchmark") || error) {
-    std::cerr << "Usage: " << argv[0] << " [options] <benchmark>\n\n";
-    std::cerr << desc << "\n";
-    return 1;
-  }
-
-  Controller controller{warmup_iters, bench_iters};
-  try {
     if (benchmark == "noop")
       benchmark_noop(controller);
     else if (benchmark == "registration-minimal")
