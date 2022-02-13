@@ -1,3 +1,4 @@
+#include "options.hpp"
 #include <cpuid.h>
 #include <cstring>
 #include <iostream>
@@ -10,23 +11,23 @@
 #include <unistd.h>
 #include <x86intrin.h>
 
-#define inline_always inline __attribute__((always_inline))
+#define INLINE inline __attribute__((always_inline))
 
 namespace cycles {
 
 static const int NICENESS = -20;
 
 /* Prevent compiler reordering. */
-static inline_always void barrier() { asm volatile("" : : : "memory"); }
+static INLINE void barrier() { asm volatile("" : : : "memory"); }
 
 /* Serialize instruction stream with CPUID. */
-static inline_always void serialize() {
+static INLINE void serialize() {
   unsigned int eax, ebc, ecx, edx;
   __cpuid(0, eax, ebc, ecx, edx);
 }
 
 /* Read data without tears. */
-template <class T> static inline_always T read_once(T const &t) {
+template <class T> static INLINE T read_once(T const &t) {
   return *(const volatile T *)&t;
 }
 
@@ -81,7 +82,7 @@ static perf_event_mmap_page *initialize_pc() {
   return pc;
 }
 
-static inline_always std::optional<std::uint64_t>
+static INLINE std::optional<std::uint64_t>
 perf_cycles(perf_event_mmap_page const *pc) {
   std::uint64_t cycles;
 
@@ -107,16 +108,80 @@ perf_cycles(perf_event_mmap_page const *pc) {
 
 } // namespace cycles
 
-int main() {
-  auto pc = cycles::initialize_pc();
+namespace crtl {
 
-  auto start = cycles::perf_cycles(pc);
-  auto end = cycles::perf_cycles(pc);
+/*
+ * Controller which counts the performed iterations and prints the measured
+ * cycles.
+ */
+class Controller {
+  perf_event_mmap_page const *pc;
+  std::uint64_t iters, bench_iters;
+  std::uint64_t start;
 
-  if (!start || !end) {
-    std::cerr << "cycle counter reading was interrupted" << std::endl;
-    return 1;
+public:
+  Controller(perf_event_mmap_page const *pc, std::uint64_t warmup_iters,
+             std::uint64_t bench_iters)
+      : pc{pc}, iters{warmup_iters + bench_iters}, bench_iters{bench_iters} {}
+
+  /*
+   * Returns true as long as the benchmarks should continue.
+   */
+  bool cont() { return iters > 0; }
+
+  /*
+   * Start a measured benchmark section.
+   */
+  void INLINE measure_start() {
+    std::optional<std::uint64_t> start;
+
+    do {
+      start = cycles::perf_cycles(pc);
+    } while (!start);
+
+    this->start = *start;
   }
 
-  std::cout << *end - *start << '\n';
+  /*
+   * End a measured benchmark section.
+   *
+   * Prints the result if not still in the warmup phase.
+   * After the warmup phase, measurements with interrupted counter reads will
+   * be discarded.
+   */
+  void INLINE print_end() {
+    if (iters > bench_iters) {
+      iters--;
+      return;
+    }
+
+    auto end = cycles::perf_cycles(pc);
+    if (!end)
+      return;
+
+    std::cout << *end - start << std::endl;
+    iters--;
+  }
+};
+
+} // namespace crtl
+
+void benchmark_noop(crtl::Controller &controller) {
+  while (controller.cont()) {
+    controller.measure_start();
+    controller.print_end();
+  }
+}
+
+int main(int argc, char *argv[]) {
+  auto opt = options::parse_cmd(argc, argv);
+  auto pc = cycles::initialize_pc();
+  crtl::Controller controller{pc, opt.warmup_iters, opt.bench_iters};
+
+  if (opt.benchmark == "noop")
+    benchmark_noop(controller);
+  else {
+    std::cerr << "unknown benchmark " << opt.benchmark << std::endl;
+    return 1;
+  }
 }

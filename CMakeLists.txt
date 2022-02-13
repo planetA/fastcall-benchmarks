@@ -11,6 +11,11 @@ set(WARN_OPTIONS -Wall -Wextra)
 
 include_directories(include)
 
+if(BUILD_MISC OR BUILD_CYCLES)
+  find_package(Boost COMPONENTS program_options REQUIRED)
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
 if(BUILD_BENCHMARK)
   add_subdirectory(benchmark)
 endif()
