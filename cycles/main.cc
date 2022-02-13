@@ -1,10 +1,13 @@
+#include "fastcall.hpp"
 #include "options.hpp"
 #include <cpuid.h>
 #include <cstring>
+#include <fcntl.h>
 #include <iostream>
 #include <linux/perf_event.h>
 #include <optional>
 #include <sched.h>
+#include <stdexcept>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <system_error>
@@ -173,12 +176,33 @@ void benchmark_noop(crtl::Controller &controller) {
   }
 }
 
+void benchmark_fastcall(crtl::Controller &controller) {
+  int fd = open(fce::DEVICE_FILE, O_RDONLY);
+  if (fd < 0)
+    throw std::system_error{errno, std::generic_category()};
+
+  fce::ioctl_args args;
+  if (ioctl(fd, fce::IOCTL_NOOP, &args))
+    throw std::system_error{errno, std::generic_category()};
+
+  if (fce::fastcall_syscall(args.index) != 0)
+    throw std::runtime_error{"noop fastcall failed"};
+
+  while (controller.cont()) {
+    controller.measure_start();
+    fce::fastcall_syscall(args.index);
+    controller.print_end();
+  }
+}
+
 int main(int argc, char *argv[]) {
   auto opt = options::parse_cmd(argc, argv);
   auto pc = cycles::initialize_pc();
   crtl::Controller controller{pc, opt.warmup_iters, opt.bench_iters};
 
   if (opt.benchmark == "noop")
+    benchmark_noop(controller);
+  else if (opt.benchmark == "fastcall")
     benchmark_noop(controller);
   else {
     std::cerr << "unknown benchmark " << opt.benchmark << std::endl;
