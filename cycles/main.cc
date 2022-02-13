@@ -88,6 +88,12 @@ static perf_event_mmap_page *initialize_pc() {
   return pc;
 }
 
+/*
+ * Read the current cycle counter value with RDPMC.
+ *
+ * If the reading the perf page gets interrupted by some modification,
+ * no cycle count is returned.
+ */
 static INLINE std::optional<std::uint64_t>
 perf_cycles(perf_event_mmap_page const *pc) {
   std::uint64_t cycles;
@@ -172,6 +178,7 @@ public:
 
 } // namespace crtl
 
+/* Just benchmark the cycle counting overhead itself. */
 static void benchmark_noop(crtl::Controller &controller) {
   while (controller.cont()) {
     controller.measure_start();
@@ -179,6 +186,7 @@ static void benchmark_noop(crtl::Controller &controller) {
   }
 }
 
+/* Benchmark an empty fastcall. */
 static void benchmark_fastcall(crtl::Controller &controller) {
   int fd = open(fce::DEVICE_FILE, O_RDONLY);
   if (fd < 0)
@@ -198,6 +206,7 @@ static void benchmark_fastcall(crtl::Controller &controller) {
   }
 }
 
+/* Benchmark the empty vDSO function of fccmp. */
 static void benchmark_vdso(crtl::Controller &controller) {
   vdso_init_from_sysinfo_ehdr(getauxval(AT_SYSINFO_EHDR));
 
@@ -216,6 +225,7 @@ static void benchmark_vdso(crtl::Controller &controller) {
   }
 }
 
+/* Benchmark an empty system call. */
 static void benchmark_syscall(crtl::Controller &controller) {
   if (syscall(fccmp::NR_SYS_NI_SYSCALL) >= 0 || errno != ENOSYS)
     throw std::runtime_error{"unexpected system call defined"};
@@ -227,6 +237,7 @@ static void benchmark_syscall(crtl::Controller &controller) {
   }
 }
 
+/* Benchmark the empty ioctl function of fccmp. */
 static void benchmark_ioctl(crtl::Controller &controller) {
   int fd = open(fccmp::DEVICE_FILE, O_RDONLY);
   if (fd < 0)

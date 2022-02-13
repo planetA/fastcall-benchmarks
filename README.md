@@ -2,7 +2,8 @@
 
 Benchmarks of the [fastcall mechanism](https://github.com/vilaureu/linux/tree/fastcall).
 
-This repository contains multiple benchmarks executables: _benchmark_ and _misc_.
+This repository contains multiple benchmarks executables: _benchmark_, _cycles_
+and _misc_.
 Have a look at the directories with the same names.
 
 ## Dependencies
