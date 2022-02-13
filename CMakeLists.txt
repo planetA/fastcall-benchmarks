@@ -16,6 +16,11 @@ if(BUILD_MISC OR BUILD_CYCLES)
   include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
+if(BUILD_BENCHMARK OR BUILD_CYCLES)
+  add_library(parse-vdso STATIC parse_vdso.c)
+  target_compile_options(parse-vdso PRIVATE -w)
+endif()
+
 if(BUILD_BENCHMARK)
   add_subdirectory(benchmark)
 endif()

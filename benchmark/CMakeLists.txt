@@ -5,9 +5,6 @@ enable_language(ASM)
 
 find_package(benchmark REQUIRED)
 
-add_library(parse-vdso STATIC parse_vdso.c)
-target_compile_options(parse-vdso PRIVATE -w)
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(fastcall-benchmark main.cc invocation.S)
 target_compile_options(fastcall-benchmark PRIVATE ${WARN_OPTIONS})

@@ -1,3 +1,10 @@
+/*
+ * This files handles the parsing of program options for the misc and cycles
+ * benchmarks.
+ */
+
+#pragma once
+
 #include <boost/program_options.hpp>
 #include <iostream>
 
@@ -12,6 +19,9 @@ struct Opt {
   std::string benchmark;
 };
 
+/*
+ * Parses command line options and exits on failure.
+ */
 static inline Opt parse_cmd(int argc, char const *const argv[]) {
   namespace po = boost::program_options;
 

@@ -1,13 +1,16 @@
 #include "fastcall.hpp"
+#include "fccmp.hpp"
 #include "options.hpp"
 #include <cpuid.h>
 #include <cstring>
+#include <elf.h>
 #include <fcntl.h>
 #include <iostream>
 #include <linux/perf_event.h>
 #include <optional>
 #include <sched.h>
 #include <stdexcept>
+#include <sys/auxv.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <system_error>
@@ -169,14 +172,14 @@ public:
 
 } // namespace crtl
 
-void benchmark_noop(crtl::Controller &controller) {
+static void benchmark_noop(crtl::Controller &controller) {
   while (controller.cont()) {
     controller.measure_start();
     controller.print_end();
   }
 }
 
-void benchmark_fastcall(crtl::Controller &controller) {
+static void benchmark_fastcall(crtl::Controller &controller) {
   int fd = open(fce::DEVICE_FILE, O_RDONLY);
   if (fd < 0)
     throw std::system_error{errno, std::generic_category()};
@@ -185,12 +188,30 @@ void benchmark_fastcall(crtl::Controller &controller) {
   if (ioctl(fd, fce::IOCTL_NOOP, &args))
     throw std::system_error{errno, std::generic_category()};
 
-  if (fce::fastcall_syscall(args.index) != 0)
+  if (fce::fastcall_syscall(args.index))
     throw std::runtime_error{"noop fastcall failed"};
 
   while (controller.cont()) {
     controller.measure_start();
     fce::fastcall_syscall(args.index);
+    controller.print_end();
+  }
+}
+
+static void benchmark_vdso(crtl::Controller &controller) {
+  vdso_init_from_sysinfo_ehdr(getauxval(AT_SYSINFO_EHDR));
+
+  auto noop = reinterpret_cast<fccmp::VDSO_NOOP_TYPE *>(
+      vdso_sym(fccmp::VDSO_VERSION, fccmp::VDSO_NOOP));
+  if (!noop)
+    throw std::runtime_error{"noop vDSO function not found"};
+
+  if (noop())
+    throw std::runtime_error{"noop vDSO function failed"};
+
+  while (controller.cont()) {
+    controller.measure_start();
+    noop();
     controller.print_end();
   }
 }
@@ -203,7 +224,9 @@ int main(int argc, char *argv[]) {
   if (opt.benchmark == "noop")
     benchmark_noop(controller);
   else if (opt.benchmark == "fastcall")
-    benchmark_noop(controller);
+    benchmark_fastcall(controller);
+  else if (opt.benchmark == "vdso")
+    benchmark_vdso(controller);
   else {
     std::cerr << "unknown benchmark " << opt.benchmark << std::endl;
     return 1;

@@ -9,17 +9,9 @@
 #include <sys/auxv.h>
 #include <unistd.h>
 
-extern "C" void vdso_init_from_sysinfo_ehdr(uintptr_t base);
-extern "C" void *vdso_sym(const char *version, const char *name);
-
 namespace fccmp {
 
 static bool vdso_initialized = false;
-#ifdef __aarch64__
-static const char *VDSO_VERSION = "LINUX_2.6.39";
-#else
-static const char *VDSO_VERSION = "LINUX_2.6";
-#endif
 
 class IOCTLFixture : public benchmark::Fixture {
 public:
