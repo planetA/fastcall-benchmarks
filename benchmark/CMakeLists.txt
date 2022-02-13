@@ -10,5 +10,5 @@ target_compile_options(parse-vdso PRIVATE -w)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(fastcall-benchmark main.cc invocation.S)
-target_compile_options(fastcall-benchmark PRIVATE -Wall -Wextra)
+target_compile_options(fastcall-benchmark PRIVATE ${WARN_OPTIONS})
 target_link_libraries(fastcall-benchmark benchmark::benchmark parse-vdso)
