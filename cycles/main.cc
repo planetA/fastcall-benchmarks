@@ -216,6 +216,17 @@ static void benchmark_vdso(crtl::Controller &controller) {
   }
 }
 
+static void benchmark_syscall(crtl::Controller &controller) {
+  if (syscall(fccmp::NR_SYS_NI_SYSCALL) >= 0 || errno != ENOSYS)
+    throw std::runtime_error{"unexpected system call defined"};
+
+  while (controller.cont()) {
+    controller.measure_start();
+    syscall(fccmp::NR_SYS_NI_SYSCALL);
+    controller.print_end();
+  }
+}
+
 int main(int argc, char *argv[]) {
   auto opt = options::parse_cmd(argc, argv);
   auto pc = cycles::initialize_pc();
@@ -227,6 +238,8 @@ int main(int argc, char *argv[]) {
     benchmark_fastcall(controller);
   else if (opt.benchmark == "vdso")
     benchmark_vdso(controller);
+  else if (opt.benchmark == "syscall")
+    benchmark_syscall(controller);
   else {
     std::cerr << "unknown benchmark " << opt.benchmark << std::endl;
     return 1;

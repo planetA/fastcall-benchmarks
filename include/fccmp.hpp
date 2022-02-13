@@ -35,6 +35,8 @@ static const unsigned IOCTL_NOOP = _IO(TYPE, 0);
 static const unsigned IOCTL_ARRAY = _IOW(TYPE, 1, struct array_args);
 static const unsigned IOCTL_NT = _IOW(TYPE, 2, struct array_nt_args);
 
+/* Unused system call number on x86-64 and arm64 */
+static const unsigned long NR_SYS_NI_SYSCALL = 335;
 static const long NR_ARRAY = 443;
 static const long NR_NT = 444;
 
