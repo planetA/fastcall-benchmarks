@@ -227,6 +227,21 @@ static void benchmark_syscall(crtl::Controller &controller) {
   }
 }
 
+static void benchmark_ioctl(crtl::Controller &controller) {
+  int fd = open(fccmp::DEVICE_FILE, O_RDONLY);
+  if (fd < 0)
+    throw std::system_error{errno, std::generic_category()};
+
+  if (ioctl(fd, fccmp::IOCTL_NOOP))
+    throw std::runtime_error{"ioctl noop failed"};
+
+  while (controller.cont()) {
+    controller.measure_start();
+    ioctl(fd, fccmp::IOCTL_NOOP);
+    controller.print_end();
+  }
+}
+
 int main(int argc, char *argv[]) {
   auto opt = options::parse_cmd(argc, argv);
   auto pc = cycles::initialize_pc();
@@ -240,6 +255,8 @@ int main(int argc, char *argv[]) {
     benchmark_vdso(controller);
   else if (opt.benchmark == "syscall")
     benchmark_syscall(controller);
+  else if (opt.benchmark == "ioctl")
+    benchmark_ioctl(controller);
   else {
     std::cerr << "unknown benchmark " << opt.benchmark << std::endl;
     return 1;
