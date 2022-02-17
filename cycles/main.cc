@@ -1,12 +1,10 @@
 #include "fastcall.hpp"
 #include "fccmp.hpp"
 #include "options.hpp"
-#include <cpuid.h>
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
 #include <iostream>
-#include <linux/perf_event.h>
 #include <optional>
 #include <sched.h>
 #include <stdexcept>
@@ -15,7 +13,12 @@
 #include <sys/syscall.h>
 #include <system_error>
 #include <unistd.h>
-#include <x86intrin.h>
+
+#if defined(__i386__) || defined(__x86_64__)
+#include "x86.hpp"
+#else
+#include "generic.hpp"
+#endif
 
 #define INLINE inline __attribute__((always_inline))
 
@@ -23,31 +26,19 @@ namespace cycles {
 
 static const int NICENESS = -20;
 
-/* Prevent compiler reordering. */
-static INLINE void barrier() { asm volatile("" : : : "memory"); }
-
-/* Serialize instruction stream with CPUID. */
-static INLINE void serialize() {
-  unsigned int eax, ebc, ecx, edx;
-  __cpuid(0, eax, ebc, ecx, edx);
-}
-
-/* Read data without tears. */
-template <class T> static INLINE T read_once(T const &t) {
-  return *(const volatile T *)&t;
-}
-
-/* wrapper for the getcpu syscall in case the local libc does not support it  */
+/*
+ * Wrapper for the getcpu syscall in case the local libc does not support it.
+ */
 static inline int getcpu_wrapper(unsigned int *cpu, unsigned int *node) {
-    #ifdef SYS_getcpu
-        return(syscall(SYS_getcpu, cpu, node, NULL));
-    #else
-        return(-1);
-    #endif
+#ifdef SYS_getcpu
+  return (syscall(SYS_getcpu, cpu, node, NULL));
+#else
+  return (-1);
+#endif
 }
 
 /* Initialize a perf memory map for reading the performance counter. */
-static perf_event_mmap_page *initialize_pc() {
+static perf_context initialize_pc() {
   /*
    * Get the current CPU just to have a value for the affinity and perf
    * syscall.
@@ -84,10 +75,7 @@ static perf_event_mmap_page *initialize_pc() {
   if (fd < 0)
     throw std::system_error{errno, std::generic_category()};
 
-  perf_event_mmap_page *pc = reinterpret_cast<perf_event_mmap_page *>(
-      mmap(nullptr, getpagesize(), PROT_READ, MAP_SHARED, fd, 0));
-  if (pc == MAP_FAILED)
-    throw std::system_error{errno, std::generic_category()};
+  perf_context pc = arch_init_counter(fd);
 
   // Lock all pages to avoid faults during benchmarks
   if (mlockall(MCL_CURRENT | MCL_FUTURE))
@@ -95,36 +83,6 @@ static perf_event_mmap_page *initialize_pc() {
               << std::strerror(errno) << std::endl;
 
   return pc;
-}
-
-/*
- * Read the current cycle counter value with RDPMC.
- *
- * If the reading the perf page gets interrupted by some modification,
- * no cycle count is returned.
- */
-static INLINE std::optional<std::uint64_t>
-perf_cycles(perf_event_mmap_page const *pc) {
-  std::uint64_t cycles;
-
-  serialize();
-
-  // Loads are not reordered with other loads on x86.
-  std::uint32_t seq = read_once(pc->lock);
-  barrier();
-
-  std::uint32_t idx = pc->index;
-  if (!pc->cap_user_rdpmc || !idx)
-    throw std::runtime_error("cannot read performance counter");
-
-  cycles = _rdpmc(idx - 1) & ((1 << pc->pmc_width) - 1);
-
-  barrier();
-  if (seq != read_once(pc->lock))
-    return std::nullopt;
-
-  serialize();
-  return {cycles};
 }
 
 } // namespace cycles
@@ -136,12 +94,12 @@ namespace crtl {
  * cycles.
  */
 class Controller {
-  perf_event_mmap_page const *pc;
+  cycles::perf_context pc;
   std::uint64_t iters, bench_iters;
-  std::uint64_t start;
+  cycles::cycles_t start;
 
 public:
-  Controller(perf_event_mmap_page const *pc, std::uint64_t warmup_iters,
+  Controller(cycles::perf_context pc, std::uint64_t warmup_iters,
              std::uint64_t bench_iters)
       : pc{pc}, iters{warmup_iters + bench_iters}, bench_iters{bench_iters} {}
 
@@ -153,15 +111,7 @@ public:
   /*
    * Start a measured benchmark section.
    */
-  void INLINE measure_start() {
-    std::optional<std::uint64_t> start;
-
-    do {
-      start = cycles::perf_cycles(pc);
-    } while (!start);
-
-    this->start = *start;
-  }
+  void INLINE measure_start() { start = cycles::arch_start(pc); }
 
   /*
    * End a measured benchmark section.
@@ -176,11 +126,11 @@ public:
       return;
     }
 
-    auto end = cycles::perf_cycles(pc);
-    if (!end)
+    auto elapsed = cycles::arch_end(pc, start);
+    if (!elapsed)
       return;
 
-    std::cout << *end - start << std::endl;
+    std::cout << *elapsed << std::endl;
     iters--;
   }
 };

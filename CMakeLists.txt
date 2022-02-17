@@ -17,8 +17,13 @@ if(BUILD_MISC OR BUILD_CYCLES)
 endif()
 
 if(BUILD_BENCHMARK OR BUILD_CYCLES)
+  enable_language(ASM)
+
   add_library(parse-vdso STATIC parse_vdso.c)
   target_compile_options(parse-vdso PRIVATE -w)
+
+  add_library(invocation STATIC invocation.S)
+  target_compile_options(invocation PRIVATE ${WARN_OPTIONS})
 endif()
 
 if(BUILD_BENCHMARK)

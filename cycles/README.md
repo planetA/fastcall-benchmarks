@@ -7,11 +7,6 @@ A set of cycle-based benchmarks for the
 
 - [_Boost_](https://www.boost.org/) (_program_options_ library)
 
-## Building
-
-This program only builds under x86-64. Please disable this program with the
-`cmake` option `-DBUILD_CYCLES=OFF` on other architectures.
-
 ## Usage
 
 The executable prints just a list of the measured cycle count.
