@@ -37,6 +37,15 @@ template <class T> static INLINE T read_once(T const &t) {
   return *(const volatile T *)&t;
 }
 
+/* wrapper for the getcpu syscall in case the local libc does not support it  */
+static inline int getcpu_wrapper(unsigned int *cpu, unsigned int *node) {
+    #ifdef SYS_getcpu
+        return(syscall(SYS_getcpu, cpu, node, NULL));
+    #else
+        return(-1);
+    #endif
+}
+
 /* Initialize a perf memory map for reading the performance counter. */
 static perf_event_mmap_page *initialize_pc() {
   /*
@@ -44,7 +53,7 @@ static perf_event_mmap_page *initialize_pc() {
    * syscall.
    */
   unsigned int cpu;
-  if (getcpu(&cpu, nullptr)) {
+  if (getcpu_wrapper(&cpu, nullptr)) {
     std::cerr << "cannot get current CPU (trying to continue with 0): "
               << std::strerror(errno) << std::endl;
     cpu = 0;
