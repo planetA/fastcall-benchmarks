@@ -61,7 +61,7 @@ static INLINE std::optional<std::uint64_t> perf_cycles(perf_context pc) {
   if (!pc->cap_user_rdpmc || !idx)
     throw std::runtime_error("cannot read performance counter");
 
-  cycles = _rdpmc(idx - 1) & ((1 << pc->pmc_width) - 1);
+  cycles = _rdpmc(idx - 1) & (((std::uint64_t)1 << pc->pmc_width) - 1);
 
   barrier();
   if (seq != read_once(pc->lock))
