@@ -4,6 +4,7 @@ project(FASTCALL-BENCHMARKS)
 option(BUILD_BENCHMARK "Build the benchmark-library-based benchmarks" ON)
 option(BUILD_MISC "Build the miscellaneous benchmarks" ON)
 option(BUILD_CYCLES "Build the cycle-based benchmarks" ON)
+option(BUILD_SYSCALL "Build syscall latency benchmarks" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,4 +37,8 @@ endif()
 
 if(BUILD_CYCLES)
   add_subdirectory(cycles)
+endif()
+
+if(BUILD_SYSCALL)
+  add_subdirectory(syscall)
 endif()
