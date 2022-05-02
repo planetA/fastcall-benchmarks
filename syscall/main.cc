@@ -1,11 +1,12 @@
 /* Measure the latency of steps in the system call execution */
 
 #include "compiler.hpp"
-#include "perf.hpp"
 #include "os.hpp"
+#include "perf.hpp"
 #include <array>
 #include <cstdint>
 #include <iomanip>
+#include <iostream>
 #include <linux/perf_event.h>
 #include <stdexcept>
 #include <sys/syscall.h>
@@ -16,6 +17,10 @@
 typedef std::array<std::uint64_t, 3> Measurements;
 
 static constexpr std::size_t ITERATIONS = 100;
+
+struct SeqlockError : public std::runtime_error {
+  SeqlockError() : std::runtime_error{"sequence lock changed"} {}
+};
 
 static INLINE std::uint64_t rdpmc(std::uint32_t idx) {
   compiler::serialize();
@@ -46,7 +51,7 @@ static Measurements measure(perf_event_mmap_page const *pc) {
 
   compiler::barrier();
   if (seq != compiler::read_once(pc->lock))
-    throw std::runtime_error{"sequence lock changed"};
+    throw SeqlockError{};
 
   std::uint64_t start = measurements[0] & (((std::uint64_t)1 << width) - 1);
   for (auto &cycles : measurements) {
@@ -64,7 +69,16 @@ int main() {
 
   std::cout << SETW << "start" << SETW << "overhead" << SETW << "end" << '\n';
   for (std::size_t i = 0; i < ITERATIONS; i++) {
-    for (auto const &cycles : measure(pc)) {
+    Measurements measurements;
+    try {
+      measurements = measure(pc);
+    } catch (SeqlockError const &err) {
+      std::cout << std::flush;
+      std::cerr << err.what() << std::endl;
+      continue;
+    }
+
+    for (auto const &cycles : measurements) {
       std::cout << SETW << cycles;
     }
     std::cout << "\n";
