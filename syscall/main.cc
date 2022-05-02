@@ -2,6 +2,7 @@
 
 #include "compiler.hpp"
 #include "perf.hpp"
+#include "os.hpp"
 #include <array>
 #include <cstdint>
 #include <iomanip>
@@ -56,6 +57,8 @@ static Measurements measure(perf_event_mmap_page const *pc) {
 }
 
 int main() {
+  os::assert_fccmp_kernel();
+
   int fd = perf::initialize();
   auto pc = perf::mmap(fd);
 
