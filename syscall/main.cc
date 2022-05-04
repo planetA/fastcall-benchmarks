@@ -9,14 +9,17 @@
 #include <iostream>
 #include <linux/perf_event.h>
 #include <stdexcept>
+#include <sys/mman.h>
 #include <sys/syscall.h>
+#include <unistd.h>
 #include <x86intrin.h>
 
 #define SETW std::setw(10)
 
-typedef std::array<std::uint64_t, 3> Measurements;
+typedef std::array<std::uint64_t, 6> Measurements;
 
 static constexpr std::size_t ITERATIONS = 100;
+static constexpr long SYS_BENCH = 445;
 
 struct SeqlockError : public std::runtime_error {
   SeqlockError() : std::runtime_error{"sequence lock changed"} {}
@@ -31,6 +34,8 @@ static INLINE std::uint64_t rdpmc(std::uint32_t idx) {
 
 static Measurements measure(perf_event_mmap_page const *pc) {
   Measurements measurements;
+  if (mlock(&measurements, sizeof(measurements)))
+    perror("mlock failed");
 
   // Sequence lock is held accross whole system call.
   std::uint32_t seq = compiler::read_once(pc->lock);
@@ -47,7 +52,9 @@ static Measurements measure(perf_event_mmap_page const *pc) {
   // Measure overhead of successive rdmpc() invocations
   measurements[1] = rdpmc(idx);
 
-  measurements[2] = rdpmc(idx);
+  syscall(SYS_BENCH, idx, &measurements.data()[2]);
+
+  measurements.back() = rdpmc(idx);
 
   compiler::barrier();
   if (seq != compiler::read_once(pc->lock))
@@ -67,13 +74,13 @@ int main() {
   int fd = perf::initialize();
   auto pc = perf::mmap(fd);
 
-  std::cout << SETW << "start" << SETW << "overhead" << SETW << "end" << '\n';
+  std::cout << SETW << "start" << SETW << "overhead" << SETW << "sycall" << SETW
+            << "swapgs" << SETW << "cr3" << SETW << "end" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements;
     try {
       measurements = measure(pc);
     } catch (SeqlockError const &err) {
-      std::cout << std::flush;
       std::cerr << err.what() << std::endl;
       continue;
     }
@@ -81,7 +88,7 @@ int main() {
     for (auto const &cycles : measurements) {
       std::cout << SETW << cycles;
     }
-    std::cout << "\n";
+    std::cout << std::endl;
   }
 
   return 0;
