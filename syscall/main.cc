@@ -52,7 +52,8 @@ static Measurements measure(perf_event_mmap_page const *pc) {
   // Measure overhead of successive rdmpc() invocations
   measurements[1] = rdpmc(idx);
 
-  syscall(SYS_BENCH, idx, &measurements.data()[2]);
+  if (syscall(SYS_BENCH, idx, &measurements.data()[2]))
+    perror("system call failed");
 
   measurements.back() = rdpmc(idx);
 
