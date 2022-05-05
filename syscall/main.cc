@@ -14,9 +14,9 @@
 #include <unistd.h>
 #include <x86intrin.h>
 
-#define SETW std::setw(10)
+#define SETW std::setw(11)
 
-typedef std::array<std::uint64_t, 8> Measurements;
+typedef std::array<std::uint64_t, 13> Measurements;
 
 static constexpr std::size_t ITERATIONS = 100;
 static constexpr long SYS_BENCH = 445;
@@ -76,8 +76,10 @@ int main() {
   auto pc = perf::mmap(fd);
 
   std::cout << SETW << "start" << SETW << "overhead" << SETW << "sycall" << SETW
-            << "swapgs" << SETW << "cr3" << SETW << "push_regs" << SETW
-            << "func" << SETW << "end" << std::endl;
+            << "swapgs_k" << SETW << "cr3_k" << SETW << "push_regs" << SETW
+            << "func" << SETW << "do_syscall" << SETW << "ret_checks" << SETW
+            << "pop_regs" << SETW << "cr3_u" << SETW << "swapgs_u" << SETW
+            << "sysret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements;
     try {
