@@ -26,9 +26,18 @@ struct SeqlockError : public std::runtime_error {
 };
 
 static INLINE std::uint64_t rdpmc(std::uint32_t idx) {
-  compiler::serialize();
-  std::uint64_t cycles = _rdpmc(idx);
-  compiler::serialize();
+  std::uint32_t eax = 0;
+  std::uint64_t cycles;
+  asm volatile("cpuid;"
+               "movl %2, %%ecx;"
+               "rdpmc;"
+               "salq	$32, %%rdx;"
+               "leaq	(%%rdx, %%rax), %1;"
+               "xorl %%eax, %%eax;"
+               "cpuid;"
+               : "+&a"(eax), "=r"(cycles)
+               : "r"(idx)
+               : "ebx", "ecx", "edx", "memory");
   return cycles;
 }
 
