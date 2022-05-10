@@ -55,13 +55,13 @@ static Measurements measure(perf_event_mmap_page const *pc) {
     throw std::runtime_error("cannot read performance counter");
 
   auto width = pc->pmc_width;
-
-  measurements[0] = rdpmc(idx);
+  auto ptr = measurements.data();
+  ptr[0] = rdpmc(idx);
 
   // Measure overhead of successive rdmpc() invocations
-  measurements[1] = rdpmc(idx);
+  ptr[1] = rdpmc(idx);
 
-  if (syscall(SYS_BENCH, idx, &measurements.data()[2]))
+  if (syscall(SYS_BENCH, idx, &ptr[2]))
     perror("system call failed");
 
   measurements.back() = rdpmc(idx);
