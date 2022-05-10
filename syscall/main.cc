@@ -15,6 +15,7 @@
 #include <x86intrin.h>
 
 #define SETW std::setw(11)
+#define CETW ',' << std::setw(11)
 
 typedef std::array<std::uint64_t, 13> Measurements;
 
@@ -84,10 +85,10 @@ int main() {
   int fd = perf::initialize();
   auto pc = perf::mmap(fd);
 
-  std::cout << SETW << "start" << SETW << "overhead" << SETW << "sycall" << SETW
-            << "swapgs_k" << SETW << "cr3_k" << SETW << "push_regs" << SETW
-            << "func" << SETW << "do_syscall" << SETW << "ret_checks" << SETW
-            << "pop_regs" << SETW << "cr3_u" << SETW << "swapgs_u" << SETW
+  std::cout << SETW << "start" << CETW << "overhead" << CETW << "sycall" << CETW
+            << "swapgs_k" << CETW << "cr3_k" << CETW << "push_regs" << CETW
+            << "func" << CETW << "do_syscall" << CETW << "ret_checks" << CETW
+            << "pop_regs" << CETW << "cr3_u" << CETW << "swapgs_u" << CETW
             << "sysret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements;
@@ -98,7 +99,12 @@ int main() {
       continue;
     }
 
+    bool first = true;
     for (auto const &cycles : measurements) {
+      if (first)
+        first = false;
+      else
+        std::cout << ',';
       std::cout << SETW << cycles;
     }
     std::cout << std::endl;
