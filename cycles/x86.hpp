@@ -7,7 +7,6 @@
 
 #include "compiler.hpp"
 #include "perf.hpp"
-#include <cpuid.h>
 #include <linux/perf_event.h>
 #include <optional>
 #include <sys/mman.h>
