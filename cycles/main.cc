@@ -1,6 +1,7 @@
 #include "fastcall.hpp"
 #include "fccmp.hpp"
 #include "options.hpp"
+#include "perf.hpp"
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
@@ -26,54 +27,14 @@ namespace cycles {
 
 static const int NICENESS = -20;
 
-/*
- * Wrapper for the getcpu syscall in case the local libc does not support it.
- */
-static inline int getcpu_wrapper(unsigned int *cpu, unsigned int *node) {
-#ifdef SYS_getcpu
-  return (syscall(SYS_getcpu, cpu, node, NULL));
-#else
-  return (-1);
-#endif
-}
-
 /* Initialize a perf memory map for reading the performance counter. */
 static perf_context initialize_pc() {
-  /*
-   * Get the current CPU just to have a value for the affinity and perf
-   * syscall.
-   */
-  unsigned int cpu;
-  if (getcpu_wrapper(&cpu, nullptr)) {
-    std::cerr << "cannot get current CPU (trying to continue with 0): "
-              << std::strerror(errno) << std::endl;
-    cpu = 0;
-  }
-
-  // Dynamic CPU masks are not needed for systems which have < 1024 cores.
-  cpu_set_t set;
-  CPU_ZERO(&set);
-  CPU_SET(cpu, &set);
-  if (sched_setaffinity(0, sizeof(set), &set))
-    std::cerr << "cannot set CPU affinity, continuing anyway: "
-              << std::strerror(errno) << std::endl;
-
   errno = 0;
   if (nice(NICENESS) < 0 && errno)
     std::cerr << "cannot set niceness of this thread, continuing anyway: "
               << std::strerror(errno) << std::endl;
 
-  perf_event_attr attr{};
-  attr.type = PERF_TYPE_HARDWARE;
-  attr.size = sizeof(attr);
-  attr.config = PERF_COUNT_HW_CPU_CYCLES;
-  attr.exclude_hv = true;
-  attr.pinned = true;
-
-  int fd =
-      syscall(SYS_perf_event_open, &attr, 0, cpu, -1, PERF_FLAG_FD_CLOEXEC);
-  if (fd < 0)
-    throw std::system_error{errno, std::generic_category()};
+  int fd = perf::initialize();
 
   perf_context pc = arch_init_counter(fd);
 
