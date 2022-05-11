@@ -80,7 +80,7 @@ static Measurements measure(perf_event_mmap_page const *pc) {
 }
 
 int main() {
-  os::assert_fccmp_kernel();
+  os::assert_kernel(os::RELEASE_SYSCALL_BENCH);
 
   int fd = perf::initialize();
   auto pc = perf::mmap(fd);
