@@ -87,7 +87,7 @@ int main() {
 
   std::cout << SETW << "start" << CETW << "overhead" << CETW << "sycall" << CETW
             << "swapgs_k" << CETW << "cr3_k" << CETW << "push_regs" << CETW
-            << "func" << CETW << "do_syscall" << CETW << "ret_checks" << CETW
+            << "func_entry" << CETW << "func_exit" << CETW << "ret_checks" << CETW
             << "pop_regs" << CETW << "cr3_u" << CETW << "swapgs_u" << CETW
             << "sysret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
