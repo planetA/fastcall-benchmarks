@@ -29,16 +29,21 @@ struct SeqlockError : public std::runtime_error {
 static INLINE std::uint64_t rdpmc(std::uint32_t idx) {
   std::uint32_t eax = 0;
   std::uint64_t cycles;
-  asm volatile("cpuid;"
-               "movl %2, %%ecx;"
-               "rdpmc;"
-               "salq	$32, %%rdx;"
-               "leaq	(%%rdx, %%rax), %1;"
-               "xorl %%eax, %%eax;"
-               "cpuid;"
-               : "+&a"(eax), "=r"(cycles)
-               : "r"(idx)
-               : "ebx", "ecx", "edx", "memory");
+  asm volatile(
+#ifdef SERIALIZE
+      "cpuid;"
+#endif
+      "movl %2, %%ecx;"
+      "rdpmc;"
+      "salq $32, %%rdx;"
+      "leaq (%%rdx, %%rax), %1;"
+#ifdef SERIALIZE
+      "xorl %%eax, %%eax;"
+      "cpuid;"
+#endif
+      : "+&a"(eax), "=r"(cycles)
+      : "r"(idx)
+      : "ebx", "ecx", "edx", "memory");
   return cycles;
 }
 
@@ -87,9 +92,9 @@ int main() {
 
   std::cout << SETW << "start" << CETW << "overhead" << CETW << "sycall" << CETW
             << "swapgs_k" << CETW << "cr3_k" << CETW << "push_regs" << CETW
-            << "func_entry" << CETW << "func_exit" << CETW << "ret_checks" << CETW
-            << "pop_regs" << CETW << "cr3_u" << CETW << "swapgs_u" << CETW
-            << "sysret" << std::endl;
+            << "func_entry" << CETW << "func_exit" << CETW << "ret_checks"
+            << CETW << "pop_regs" << CETW << "cr3_u" << CETW << "swapgs_u"
+            << CETW << "sysret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements;
     try {
