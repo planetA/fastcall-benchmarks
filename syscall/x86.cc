@@ -1,4 +1,6 @@
-/* Measure the latency of steps in the system call execution */
+/* Measure the latency of steps in the system call execution on x86 */
+
+#ifdef __x86_64__
 
 #include "compiler.hpp"
 #include "os.hpp"
@@ -117,3 +119,5 @@ int main() {
 
   return 0;
 }
+
+#endif /* __x86_64__ */
