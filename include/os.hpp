@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <sys/utsname.h>
@@ -30,6 +31,26 @@ static inline void assert_kernel(std::string const &expected) {
     std::cerr << "not running under " << expected << " kernel" << std::endl;
     exit(2);
   }
+}
+
+/* Set CPU affinity and return current CPU (if possible). */
+static inline unsigned int fix_cpu() {
+  int cpu = sched_getcpu();
+  if (cpu < 0) {
+    std::cerr << "cannot get current CPU (trying to continue with 0): "
+              << std::strerror(errno) << std::endl;
+    cpu = 0;
+  }
+
+  // Dynamic CPU masks are not needed for systems which have < 1024 cores.
+  cpu_set_t set;
+  CPU_ZERO(&set);
+  CPU_SET(cpu, &set);
+  if (sched_setaffinity(0, sizeof(set), &set))
+    std::cerr << "cannot set CPU affinity, continuing anyway: "
+              << std::strerror(errno) << std::endl;
+
+  return cpu;
 }
 
 } // namespace os

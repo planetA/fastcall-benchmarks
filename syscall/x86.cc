@@ -5,6 +5,8 @@
 #include "compiler.hpp"
 #include "os.hpp"
 #include "perf.hpp"
+#include "syscall.hpp"
+
 #include <array>
 #include <cstdint>
 #include <iomanip>
@@ -54,7 +56,7 @@ static Measurements measure(perf_event_mmap_page const *pc) {
   if (mlock(&measurements, sizeof(measurements)))
     perror("mlock failed");
 
-  // Sequence lock is held accross whole system call.
+  // Sequence lock is held across whole system call.
   std::uint32_t seq = compiler::read_once(pc->lock);
   compiler::barrier();
 
