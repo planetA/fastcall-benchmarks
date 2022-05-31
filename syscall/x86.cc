@@ -23,9 +23,6 @@
 
 typedef std::array<std::uint64_t, 13> Measurements;
 
-static constexpr std::size_t ITERATIONS = 100;
-static constexpr long SYS_BENCH = 445;
-
 struct SeqlockError : public std::runtime_error {
   SeqlockError() : std::runtime_error{"sequence lock changed"} {}
 };

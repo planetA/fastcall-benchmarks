@@ -5,3 +5,4 @@
 #include <cstdio>
 
 static constexpr std::size_t ITERATIONS = 100;
+static constexpr long SYS_BENCH = 445;

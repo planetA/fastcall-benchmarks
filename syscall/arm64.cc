@@ -10,11 +10,12 @@
 #include <iomanip>
 #include <iostream>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #define SETW std::setw(9)
 #define CETW ',' << std::setw(9)
 
-typedef std::array<std::uint64_t, 3> Measurements;
+typedef std::array<std::uint64_t, 4> Measurements;
 
 /* Read pmccntr_el0, optionally serialized. */
 static INLINE size_t pmccntr() {
@@ -44,6 +45,9 @@ static Measurements measure() {
   // Measure overhead of successive pmccntr() invocations
   ptr[1] = pmccntr();
 
+  if (syscall(SYS_BENCH, &ptr[2]))
+    perror("system call failed");
+
   measurements.back() = pmccntr();
 
   std::uint64_t start = measurements[0];
@@ -58,8 +62,8 @@ int main() {
   os::assert_kernel(os::RELEASE_SYSCALL_BENCH);
   os::fix_cpu();
 
-  std::cout << SETW << "start" << CETW << "overhead" << CETW << "sysret"
-            << std::endl;
+  std::cout << SETW << "start" << CETW << "overhead" << CETW << "svc" << CETW
+            << "eret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements = measure();
 
