@@ -12,10 +12,10 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#define SETW std::setw(9)
-#define CETW ',' << std::setw(9)
+#define SETW std::setw(12)
+#define CETW ',' << std::setw(12)
 
-typedef std::array<std::uint64_t, 4> Measurements;
+typedef std::array<std::uint64_t, 5> Measurements;
 
 /* Read pmccntr_el0, optionally serialized. */
 static INLINE size_t pmccntr() {
@@ -62,8 +62,8 @@ int main() {
   os::assert_kernel(os::RELEASE_SYSCALL_BENCH);
   os::fix_cpu();
 
-  std::cout << SETW << "start" << CETW << "overhead" << CETW << "svc" << CETW
-            << "eret" << std::endl;
+  std::cout << SETW << "start" << CETW << "overhead" << CETW << "tramp_entry"
+            << CETW << "entry" << CETW << "eret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements = measure();
 
