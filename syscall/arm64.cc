@@ -15,7 +15,7 @@
 #define SETW std::setw(12)
 #define CETW ',' << std::setw(12)
 
-typedef std::array<std::uint64_t, 12> Measurements;
+typedef std::array<std::uint64_t, 13> Measurements;
 
 /* Read pmccntr_el0, optionally serialized. */
 static INLINE size_t pmccntr() {
@@ -65,8 +65,8 @@ int main() {
   std::cout << SETW << "start" << CETW << "overhead" << CETW << "tramp_entry"
             << CETW << "entry" << CETW << "sync" << CETW << "handler" << CETW
             << "svc_common" << CETW << "func_entry" << CETW << "func_exit"
-            << CETW << "finish" << CETW << "restore" << CETW << "eret"
-            << std::endl;
+            << CETW << "finish" << CETW << "restore" << CETW << "tramp_exit"
+            << CETW << "eret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements = measure();
 
