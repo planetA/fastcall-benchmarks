@@ -17,6 +17,9 @@
 
 typedef std::array<std::uint64_t, 13> Measurements;
 
+static constexpr std::size_t SVC = 2;
+static constexpr std::size_t TRAMP_EXIT = 11;
+
 /* Read pmccntr_el0, optionally serialized. */
 static INLINE size_t pmccntr() {
   size_t counter;
@@ -35,7 +38,7 @@ static INLINE size_t pmccntr() {
 }
 
 static Measurements measure() {
-  Measurements measurements;
+  Measurements measurements{};
   if (mlock(&measurements, sizeof(measurements)))
     perror("mlock failed");
 
@@ -50,6 +53,14 @@ static Measurements measure() {
 
   measurements.back() = pmccntr();
 
+  // If KPTI is disabled, set latency of skipped probes to zero.
+  if (measurements[SVC] == 0) {
+    measurements[SVC] = measurements[SVC + 1];
+  }
+  if (measurements[TRAMP_EXIT] == 0) {
+    measurements[TRAMP_EXIT] = measurements[TRAMP_EXIT - 1];
+  }
+
   std::uint64_t start = measurements[0];
   for (auto &cycles : measurements) {
     cycles = cycles - start;
@@ -62,11 +73,11 @@ int main() {
   os::assert_kernel(os::RELEASE_SYSCALL_BENCH);
   os::fix_cpu();
 
-  std::cout << SETW << "start" << CETW << "overhead" << CETW << "tramp_entry"
-            << CETW << "entry" << CETW << "sync" << CETW << "handler" << CETW
-            << "svc_common" << CETW << "func_entry" << CETW << "func_exit"
-            << CETW << "finish" << CETW << "restore" << CETW << "tramp_exit"
-            << CETW << "eret" << std::endl;
+  std::cout << SETW << "start" << CETW << "overhead" << CETW << "svc" << CETW
+            << "tramp_entry" << CETW << "sp_overflow" << CETW << "entry" << CETW
+            << "el0_svc" << CETW << "func_entry" << CETW << "func_exit" << CETW
+            << "finish" << CETW << "restore" << CETW << "tramp_exit" << CETW
+            << "eret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements = measure();
 
