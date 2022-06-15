@@ -1,8 +1,12 @@
-/* Measure the latency of steps in the system call execution */
+/* Measure the latency of steps in the system call execution on x86 */
+
+#ifdef __x86_64__
 
 #include "compiler.hpp"
 #include "os.hpp"
 #include "perf.hpp"
+#include "syscall.hpp"
+
 #include <array>
 #include <cstdint>
 #include <iomanip>
@@ -19,9 +23,6 @@
 
 typedef std::array<std::uint64_t, 13> Measurements;
 
-static constexpr std::size_t ITERATIONS = 100;
-static constexpr long SYS_BENCH = 445;
-
 struct SeqlockError : public std::runtime_error {
   SeqlockError() : std::runtime_error{"sequence lock changed"} {}
 };
@@ -29,16 +30,21 @@ struct SeqlockError : public std::runtime_error {
 static INLINE std::uint64_t rdpmc(std::uint32_t idx) {
   std::uint32_t eax = 0;
   std::uint64_t cycles;
-  asm volatile("cpuid;"
-               "movl %2, %%ecx;"
-               "rdpmc;"
-               "salq	$32, %%rdx;"
-               "leaq	(%%rdx, %%rax), %1;"
-               "xorl %%eax, %%eax;"
-               "cpuid;"
-               : "+&a"(eax), "=r"(cycles)
-               : "r"(idx)
-               : "ebx", "ecx", "edx", "memory");
+  asm volatile(
+#ifdef SERIALIZE
+      "cpuid;"
+#endif
+      "movl %2, %%ecx;"
+      "rdpmc;"
+      "salq $32, %%rdx;"
+      "leaq (%%rdx, %%rax), %1;"
+#ifdef SERIALIZE
+      "xorl %%eax, %%eax;"
+      "cpuid;"
+#endif
+      : "+&a"(eax), "=r"(cycles)
+      : "r"(idx)
+      : "ebx", "ecx", "edx", "memory");
   return cycles;
 }
 
@@ -47,7 +53,7 @@ static Measurements measure(perf_event_mmap_page const *pc) {
   if (mlock(&measurements, sizeof(measurements)))
     perror("mlock failed");
 
-  // Sequence lock is held accross whole system call.
+  // Sequence lock is held across whole system call.
   std::uint32_t seq = compiler::read_once(pc->lock);
   compiler::barrier();
 
@@ -87,9 +93,9 @@ int main() {
 
   std::cout << SETW << "start" << CETW << "overhead" << CETW << "sycall" << CETW
             << "swapgs_k" << CETW << "cr3_k" << CETW << "push_regs" << CETW
-            << "func" << CETW << "do_syscall" << CETW << "ret_checks" << CETW
-            << "pop_regs" << CETW << "cr3_u" << CETW << "swapgs_u" << CETW
-            << "sysret" << std::endl;
+            << "func_entry" << CETW << "func_exit" << CETW << "ret_checks"
+            << CETW << "pop_regs" << CETW << "cr3_u" << CETW << "swapgs_u"
+            << CETW << "sysret" << std::endl;
   for (std::size_t i = 0; i < ITERATIONS; i++) {
     Measurements measurements;
     try {
@@ -112,3 +118,5 @@ int main() {
 
   return 0;
 }
+
+#endif /* __x86_64__ */
