@@ -4,5 +4,9 @@
 
 #include <cstdio>
 
-static constexpr std::size_t ITERATIONS = 100;
+#ifndef SYSCALL_ITERS
+#define SYSCALL_ITERS 10000
+#endif
+
+static constexpr std::size_t ITERATIONS = SYSCALL_ITERS;
 static constexpr long SYS_BENCH = 445;
