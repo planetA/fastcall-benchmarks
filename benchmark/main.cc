@@ -8,6 +8,7 @@
 #include "fccmp.hpp"
 #include "fccmp_fixture.hpp"
 #include "fce_fixture.hpp"
+#include "yce_fixture.hpp"
 #include <benchmark/benchmark.h>
 #include <cerrno>
 #include <cstdio>
@@ -25,6 +26,7 @@ using fccmp::VDSO_COPY_NT;
 using fccmp::VDSO_NOOP;
 using fccmp::VDSOFixture;
 using fce::ExamplesFixture;
+template<const unsigned long type> using YceExamplesFixture = yce::ExamplesFixture<type>;
 
 static const unsigned long MAGIC = 0xBEEF;
 static const char MAGIC_CHAR = 0xAB;
@@ -342,6 +344,23 @@ BENCHMARK_TEMPLATE_F(ExamplesFixture, fastcall_examples_nt, fce::IOCTL_NT)
     fastcall(MAGIC % fce::ARRAY_SIZE);
 
   state.SetBytesProcessed(state.iterations() * fce::DATA_SIZE);
+}
+
+/*
+ * Benchmark the noop fastcall function of ycall-examples.
+ */
+BENCHMARK_TEMPLATE_F(YceExamplesFixture, ycall_examples_noop, yce::IOCTL_NOOP)
+(benchmark::State &state) {
+  if (state.error_occurred())
+    return;
+
+  if (ycall() != 0) {
+    state.SkipWithError("system call failed!");
+    return;
+  }
+
+  for (auto _ : state)
+    ycall();
 }
 
 BENCHMARK_MAIN();
