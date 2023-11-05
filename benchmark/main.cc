@@ -354,7 +354,7 @@ BENCHMARK_TEMPLATE_F(YceExamplesFixture, ycall_examples_noop, yce::IOCTL_NOOP)
   if (state.error_occurred())
     return;
 
-  if (ycall() != 0) {
+  if (ycall() != 2) {
     state.SkipWithError("system call failed!");
     return;
   }

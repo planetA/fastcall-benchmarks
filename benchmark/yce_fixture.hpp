@@ -22,8 +22,8 @@ public:
       return;
     }
 
-		if (type != YCE_IOCTL_REGISTRATION) {
-			state.SkipWithError("Only noop is supported");
+    if (type != YCE_IOCTL_REGISTRATION) {
+	state.SkipWithError("Only noop is supported");
 			return;
 		}
 

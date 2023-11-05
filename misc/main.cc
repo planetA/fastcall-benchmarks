@@ -1,6 +1,7 @@
 #include "controller.hpp"
 #include "fastcall.hpp"
 #include "fce.hpp"
+#include "yce.hpp"
 #include "options.hpp"
 #include <boost/program_options.hpp>
 #include <cerrno>
@@ -176,6 +177,70 @@ static int benchmark_vfork_fastcall(Controller &controller) {
   return 0;
 }
 
+/*
+ * Benchmark of the ycall registration process of a function without
+ * additional mappings.
+ */
+static int benchmark_ycall_registration_minimal(Controller &controller) {
+  yce::reg_args args;
+  yce::FileDescriptor fd{};
+
+  while (controller.cont()) {
+    controller.start_timer();
+    fd.io(YCE_IOCTL_REGISTRATION, &args);
+    controller.end_timer();
+
+    fd.deregister(&args);
+  }
+
+  return 0;
+}
+
+/*
+ * Benchmark of the fastcall deregistration process of a function without
+ * additional mappings.
+ */
+static int benchmark_ycall_deregistration_minimal(Controller &controller) {
+  yce::reg_args args;
+  yce::FileDescriptor fd{};
+
+  while (controller.cont()) {
+    fd.io(YCE_IOCTL_REGISTRATION, &args);
+
+    controller.start_timer();
+    fd.deregister(&args);
+    controller.end_timer();
+  }
+
+  return 0;
+}
+
+/*
+ * Benchmark of a fork of a process which registered many fastcalls.
+ */
+static int benchmark_fork_ycall(Controller &controller) {
+  yce::ManyFastcalls _{};
+
+  int err = benchmark_fork_simple(controller);
+  if (err)
+    return err;
+
+  return 0;
+}
+
+/*
+ * Benchmark of a vfork of a process which registered many fastcalls.
+ */
+static int benchmark_vfork_ycall(Controller &controller) {
+  yce::ManyFastcalls _{};
+
+  int err = benchmark_vfork_simple(controller);
+  if (err)
+    return err;
+
+  return 0;
+}
+
 int main(int argc, char *argv[]) {
   auto opt = options::parse_cmd(argc, argv);
 
@@ -201,6 +266,14 @@ int main(int argc, char *argv[]) {
       return benchmark_vfork_simple(controller);
     else if (benchmark == "vfork-fastcall")
       return benchmark_vfork_fastcall(controller);
+    else if (benchmark == "ycall-registration-minimal")
+      return benchmark_ycall_registration_minimal(controller);
+    else if (benchmark == "ycall-deregistration-minimal")
+      return benchmark_ycall_deregistration_minimal(controller);
+    else if (benchmark == "fork-ycall")
+      return benchmark_fork_ycall(controller);
+    else if (benchmark == "vfork-ycall")
+      return benchmark_vfork_ycall(controller);
     else {
       std::cerr << "unknown benchmark " << benchmark << '\n';
       return 1;

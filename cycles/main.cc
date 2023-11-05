@@ -1,4 +1,5 @@
 #include "fastcall.hpp"
+#include "ycall.hpp"
 #include "fccmp.hpp"
 #include "options.hpp"
 #include "perf.hpp"
@@ -126,6 +127,26 @@ static void benchmark_fastcall(crtl::Controller &controller) {
   }
 }
 
+/* Benchmark an empty fastcall. */
+static void benchmark_ycall(crtl::Controller &controller) {
+  int fd = open(yce::DEVICE_FILE, O_RDONLY);
+  if (fd < 0)
+    throw std::system_error{errno, std::generic_category()};
+
+  yce::reg_args args;
+  if (ioctl(fd, YCE_IOCTL_REGISTRATION, &args))
+    throw std::system_error{errno, std::generic_category()};
+
+  if (args.ycall() != 2)
+    throw std::runtime_error{"noop fastcall failed"};
+
+  while (controller.cont()) {
+    controller.measure_start();
+    args.ycall();
+    controller.print_end();
+  }
+}
+
 /* Benchmark the empty vDSO function of fccmp. */
 static void benchmark_vdso(crtl::Controller &controller) {
   vdso_init_from_sysinfo_ehdr(getauxval(AT_SYSINFO_EHDR));
@@ -182,6 +203,8 @@ int main(int argc, char *argv[]) {
     benchmark_noop(controller);
   else if (opt.benchmark == "fastcall")
     benchmark_fastcall(controller);
+  else if (opt.benchmark == "ycall")
+    benchmark_ycall(controller);
   else if (opt.benchmark == "vdso")
     benchmark_vdso(controller);
   else if (opt.benchmark == "syscall")
